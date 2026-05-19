@@ -7,12 +7,13 @@ import com.docufiy.notes.data.local.entity.NoteEntity
 import com.docufiy.notes.data.preferences.AppPreferences
 import com.docufiy.notes.data.repository.NoteRepository
 import com.docufiy.notes.util.NoteTemplates
+import com.docufiy.notes.util.combine6
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -21,6 +22,8 @@ data class HomeUiState(
     val recentNotes: List<NoteEntity> = emptyList(),
     val favoriteNotes: List<NoteEntity> = emptyList(),
     val webClips: List<NoteEntity> = emptyList(),
+    val pinnedNotes: List<NoteEntity> = emptyList(),
+    val continueWritingNote: NoteEntity? = null,
     val searchQuery: String = "",
     val searchResults: List<NoteEntity> = emptyList(),
     val isSearching: Boolean = false
@@ -34,16 +37,20 @@ class HomeViewModel @Inject constructor(
 
     private val _searchQuery = MutableStateFlow("")
 
-    val uiState: StateFlow<HomeUiState> = combine(
+    val uiState: StateFlow<HomeUiState> = combine6(
         repository.getRecentNotes(10),
         repository.getFavoriteNotes(),
         repository.getRecentWebImports(5),
+        repository.getPinnedNotes(),
+        repository.getRecentNotes(1).map { it.firstOrNull() },
         _searchQuery
-    ) { recent, favorites, webClips, query ->
+    ) { recent, favorites, webClips, pinned, latestNote, query ->
         HomeUiState(
             recentNotes = recent,
             favoriteNotes = favorites,
             webClips = webClips,
+            pinnedNotes = pinned,
+            continueWritingNote = latestNote,
             searchQuery = query,
             isSearching = query.isNotBlank()
         )

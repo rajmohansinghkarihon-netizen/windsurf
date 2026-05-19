@@ -69,6 +69,12 @@ fun DocufiyNavGraph(navController: NavHostController) {
                 onWebImport = {
                     navController.navigate(Screen.WebImport.route)
                 },
+                onOcr = {
+                    navController.navigate(Screen.Ocr.createRoute())
+                },
+                onFavorites = {
+                    navController.navigate(Screen.SavedNotes.route)
+                },
                 viewModel = homeViewModel
             )
         }
