@@ -27,7 +27,8 @@ object DatabaseModule {
             context,
             AppDatabase::class.java,
             "docufiy_notes.db"
-        ).build()
+        ).fallbackToDestructiveMigration()
+            .build()
     }
 
     @Provides

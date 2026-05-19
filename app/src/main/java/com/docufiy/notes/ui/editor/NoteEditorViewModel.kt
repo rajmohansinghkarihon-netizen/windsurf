@@ -261,6 +261,36 @@ class NoteEditorViewModel @Inject constructor(
         }
     }
 
+    fun updateTags(tags: String) {
+        val note = _uiState.value.note ?: return
+        _uiState.value = _uiState.value.copy(note = note.copy(tags = tags))
+        viewModelScope.launch {
+            repository.updateTags(noteId, tags)
+        }
+    }
+
+    fun togglePin() {
+        val note = _uiState.value.note ?: return
+        val newPinned = !note.isPinned
+        _uiState.value = _uiState.value.copy(note = note.copy(isPinned = newPinned))
+        viewModelScope.launch {
+            repository.updatePinned(noteId, newPinned)
+        }
+    }
+
+    fun insertVoiceText(text: String) {
+        val idx = _uiState.value.selectedBlockIndex
+        val blocks = _uiState.value.blocks.toMutableList()
+        if (idx in blocks.indices) {
+            saveUndoState()
+            val currentContent = blocks[idx].content
+            val separator = if (currentContent.isNotBlank() && !currentContent.endsWith(" ")) " " else ""
+            blocks[idx] = blocks[idx].copy(content = currentContent + separator + text)
+            _uiState.value = _uiState.value.copy(blocks = blocks)
+            scheduleAutoSave()
+        }
+    }
+
     fun insertImage(uri: Uri) {
         viewModelScope.launch {
             val result = ImageUtils.saveImageToInternal(appContext, uri, noteId) ?: return@launch

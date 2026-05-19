@@ -28,6 +28,7 @@ class AppPreferences @Inject constructor(
         val AUTO_SAVE = booleanPreferencesKey("auto_save")
         val DEFAULT_FONT_SIZE = stringPreferencesKey("default_font_size")
         val TYPING_MODE = stringPreferencesKey("typing_mode") // english or hinglish
+        val APP_LOCK_ENABLED = booleanPreferencesKey("app_lock_enabled")
     }
 
     val darkMode: Flow<Boolean> = context.dataStore.data.map { prefs ->
@@ -84,5 +85,13 @@ class AppPreferences @Inject constructor(
 
     suspend fun setTypingMode(mode: String) {
         context.dataStore.edit { it[TYPING_MODE] = mode }
+    }
+
+    val appLockEnabled: Flow<Boolean> = context.dataStore.data.map { prefs ->
+        prefs[APP_LOCK_ENABLED] ?: false
+    }
+
+    suspend fun setAppLockEnabled(enabled: Boolean) {
+        context.dataStore.edit { it[APP_LOCK_ENABLED] = enabled }
     }
 }

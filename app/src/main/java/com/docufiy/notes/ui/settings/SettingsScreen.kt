@@ -25,6 +25,7 @@ import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.FormatSize
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Palette
+import androidx.compose.material.icons.filled.Fingerprint
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -212,6 +213,23 @@ fun SettingsScreen(
                     }
                 }
             }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Security section
+            Text(
+                "Security",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold
+            )
+
+            SettingsToggle(
+                icon = Icons.Default.Fingerprint,
+                title = "Biometric App Lock",
+                subtitle = "Require fingerprint or face unlock to open app",
+                checked = uiState.appLockEnabled,
+                onCheckedChange = { viewModel.setAppLockEnabled(it) }
+            )
 
             Spacer(modifier = Modifier.height(8.dp))
 

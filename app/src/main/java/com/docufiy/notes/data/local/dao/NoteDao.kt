@@ -21,7 +21,7 @@ interface NoteDao {
     @Delete
     suspend fun delete(note: NoteEntity)
 
-    @Query("SELECT * FROM notes WHERE isDeleted = 0 ORDER BY updatedAt DESC")
+    @Query("SELECT * FROM notes WHERE isDeleted = 0 ORDER BY isPinned DESC, updatedAt DESC")
     fun getAllNotes(): Flow<List<NoteEntity>>
 
     @Query("SELECT * FROM notes WHERE id = :noteId")
@@ -62,4 +62,16 @@ interface NoteDao {
 
     @Query("UPDATE notes SET backgroundColor = :color WHERE id = :noteId")
     suspend fun updateBackgroundColor(noteId: Long, color: Long)
+
+    @Query("UPDATE notes SET isPinned = :isPinned WHERE id = :noteId")
+    suspend fun updatePinned(noteId: Long, isPinned: Boolean)
+
+    @Query("UPDATE notes SET tags = :tags WHERE id = :noteId")
+    suspend fun updateTags(noteId: Long, tags: String)
+
+    @Query("SELECT * FROM notes WHERE isDeleted = 0 AND tags LIKE '%' || :tag || '%' ORDER BY updatedAt DESC")
+    fun getNotesByTag(tag: String): Flow<List<NoteEntity>>
+
+    @Query("SELECT * FROM notes WHERE isDeleted = 0 AND isPinned = 1 ORDER BY updatedAt DESC")
+    fun getPinnedNotes(): Flow<List<NoteEntity>>
 }

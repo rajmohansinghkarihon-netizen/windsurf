@@ -16,7 +16,8 @@ data class SettingsUiState(
     val accentColor: Long = 0xFF6750A4,
     val autoSave: Boolean = true,
     val defaultFontSize: String = "16",
-    val typingMode: String = "english"
+    val typingMode: String = "english",
+    val appLockEnabled: Boolean = false
 )
 
 @HiltViewModel
@@ -24,19 +25,21 @@ class SettingsViewModel @Inject constructor(
     private val preferences: AppPreferences
 ) : ViewModel() {
 
-    val uiState: StateFlow<SettingsUiState> = combine(
+    val uiState: StateFlow<SettingsUiState> = com.docufiy.notes.util.combine6(
         preferences.darkMode,
         preferences.accentColor,
         preferences.autoSave,
         preferences.defaultFontSize,
-        preferences.typingMode
-    ) { darkMode, accentColor, autoSave, fontSize, typingMode ->
+        preferences.typingMode,
+        preferences.appLockEnabled
+    ) { darkMode, accentColor, autoSave, fontSize, typingMode, appLock ->
         SettingsUiState(
             darkMode = darkMode,
             accentColor = accentColor,
             autoSave = autoSave,
             defaultFontSize = fontSize,
-            typingMode = typingMode
+            typingMode = typingMode,
+            appLockEnabled = appLock
         )
     }.stateIn(
         scope = viewModelScope,
@@ -62,5 +65,9 @@ class SettingsViewModel @Inject constructor(
 
     fun setTypingMode(mode: String) {
         viewModelScope.launch { preferences.setTypingMode(mode) }
+    }
+
+    fun setAppLockEnabled(enabled: Boolean) {
+        viewModelScope.launch { preferences.setAppLockEnabled(enabled) }
     }
 }

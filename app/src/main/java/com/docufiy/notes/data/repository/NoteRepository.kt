@@ -26,6 +26,10 @@ interface NoteRepository {
     suspend fun permanentlyDeleteNote(note: NoteEntity)
     suspend fun updateFavorite(noteId: Long, isFavorite: Boolean)
     suspend fun updateBackgroundColor(noteId: Long, color: Long)
+    suspend fun updatePinned(noteId: Long, isPinned: Boolean)
+    suspend fun updateTags(noteId: Long, tags: String)
+    fun getNotesByTag(tag: String): Flow<List<NoteEntity>>
+    fun getPinnedNotes(): Flow<List<NoteEntity>>
     suspend fun duplicateNote(noteId: Long): Long
 
     // Blocks

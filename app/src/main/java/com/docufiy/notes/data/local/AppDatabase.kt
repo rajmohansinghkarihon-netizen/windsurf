@@ -24,7 +24,7 @@ import com.docufiy.notes.data.local.entity.NoteImageEntity
         NoteExportEntity::class,
         DeletedNoteEntity::class
     ],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {

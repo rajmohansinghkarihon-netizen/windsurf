@@ -81,6 +81,20 @@ class NoteRepositoryImpl @Inject constructor(
         noteDao.updateBackgroundColor(noteId, color)
     }
 
+    override suspend fun updatePinned(noteId: Long, isPinned: Boolean) {
+        noteDao.updatePinned(noteId, isPinned)
+    }
+
+    override suspend fun updateTags(noteId: Long, tags: String) {
+        noteDao.updateTags(noteId, tags)
+    }
+
+    override fun getNotesByTag(tag: String): Flow<List<NoteEntity>> =
+        noteDao.getNotesByTag(tag)
+
+    override fun getPinnedNotes(): Flow<List<NoteEntity>> =
+        noteDao.getPinnedNotes()
+
     override suspend fun duplicateNote(noteId: Long): Long {
         val original = noteDao.getNoteById(noteId) ?: return -1
         val newNote = original.copy(

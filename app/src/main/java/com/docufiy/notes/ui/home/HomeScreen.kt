@@ -4,6 +4,8 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -22,10 +24,14 @@ import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.Language
+import androidx.compose.material.icons.filled.PushPin
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.outlined.NoteAdd
 import androidx.compose.material.icons.outlined.FolderOpen
+import androidx.compose.material.icons.outlined.NoteAdd
+import androidx.compose.material.icons.outlined.PushPin
+import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -54,6 +60,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.docufiy.notes.data.local.entity.NoteEntity
+import com.docufiy.notes.ui.components.TagChips
+import com.docufiy.notes.ui.components.TagDefaults
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -66,6 +74,8 @@ fun HomeScreen(
     onSavedNotes: () -> Unit,
     onHistory: () -> Unit,
     onSettings: () -> Unit,
+    onTemplates: () -> Unit = {},
+    onWebImport: () -> Unit = {},
     viewModel: HomeViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -97,7 +107,7 @@ fun HomeScreen(
         },
         floatingActionButton = {
             FloatingActionButton(
-                onClick = { viewModel.createNewNote { noteId -> onOpenNote(noteId) } },
+                onClick = onTemplates,
                 containerColor = MaterialTheme.colorScheme.primary
             ) {
                 Icon(Icons.Default.Add, contentDescription = "New Note")
@@ -143,7 +153,8 @@ fun HomeScreen(
                     NoteListItem(
                         note = note,
                         onClick = { onOpenNote(note.id) },
-                        onToggleFavorite = { viewModel.toggleFavorite(note.id, note.isFavorite) }
+                        onToggleFavorite = { viewModel.toggleFavorite(note.id, note.isFavorite) },
+                        onTogglePin = { viewModel.togglePin(note.id, note.isPinned) }
                     )
                 }
             }
@@ -163,7 +174,7 @@ fun HomeScreen(
                     QuickActionCard(
                         icon = Icons.Outlined.NoteAdd,
                         label = "New Note",
-                        onClick = { viewModel.createNewNote { noteId -> onOpenNote(noteId) } },
+                        onClick = onTemplates,
                         modifier = Modifier.weight(1f)
                     )
                     QuickActionCard(
@@ -177,6 +188,50 @@ fun HomeScreen(
                         label = "History",
                         onClick = onHistory,
                         modifier = Modifier.weight(1f)
+                    )
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    QuickActionCard(
+                        icon = Icons.Default.Language,
+                        label = "Web Import",
+                        onClick = onWebImport,
+                        modifier = Modifier.weight(1f)
+                    )
+                    Spacer(modifier = Modifier.weight(2f))
+                }
+            }
+
+            // Pinned notes section
+            val pinnedNotes = uiState.recentNotes.filter { it.isPinned }
+            if (pinnedNotes.isNotEmpty()) {
+                item {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            Icons.Default.PushPin,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp),
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            "Pinned",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+                items(pinnedNotes) { note ->
+                    NoteListItem(
+                        note = note,
+                        onClick = { onOpenNote(note.id) },
+                        onToggleFavorite = { viewModel.toggleFavorite(note.id, note.isFavorite) },
+                        onTogglePin = { viewModel.togglePin(note.id, note.isPinned) }
                     )
                 }
             }
@@ -205,7 +260,8 @@ fun HomeScreen(
             }
 
             // Recent notes
-            if (uiState.recentNotes.isNotEmpty()) {
+            val unpinnedNotes = uiState.recentNotes.filter { !it.isPinned }
+            if (unpinnedNotes.isNotEmpty()) {
                 item {
                     Text(
                         "Recent Notes",
@@ -213,11 +269,12 @@ fun HomeScreen(
                         fontWeight = FontWeight.Bold
                     )
                 }
-                items(uiState.recentNotes) { note ->
+                items(unpinnedNotes) { note ->
                     NoteListItem(
                         note = note,
                         onClick = { onOpenNote(note.id) },
-                        onToggleFavorite = { viewModel.toggleFavorite(note.id, note.isFavorite) }
+                        onToggleFavorite = { viewModel.toggleFavorite(note.id, note.isFavorite) },
+                        onTogglePin = { viewModel.togglePin(note.id, note.isPinned) }
                     )
                 }
             }
@@ -290,6 +347,7 @@ private fun QuickActionCard(
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun NoteCard(
     note: NoteEntity,
@@ -312,14 +370,27 @@ fun NoteCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    note.title.ifBlank { "Untitled" },
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Bold,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.weight(1f)
-                )
+                ) {
+                    if (note.isPinned) {
+                        Icon(
+                            Icons.Default.PushPin,
+                            contentDescription = "Pinned",
+                            modifier = Modifier.size(14.dp),
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                    }
+                    Text(
+                        note.title.ifBlank { "Untitled" },
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
                 IconButton(onClick = onToggleFavorite, modifier = Modifier.size(24.dp)) {
                     Icon(
                         if (note.isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
@@ -327,6 +398,25 @@ fun NoteCard(
                         modifier = Modifier.size(16.dp),
                         tint = if (note.isFavorite) Color.Red else MaterialTheme.colorScheme.onSurfaceVariant
                     )
+                }
+            }
+            if (note.tags.isNotBlank()) {
+                Spacer(modifier = Modifier.height(4.dp))
+                val tagList = note.tags.split(",").take(2)
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    tagList.forEach { tag ->
+                        AssistChip(
+                            onClick = {},
+                            label = {
+                                Text(
+                                    tag.trim(),
+                                    style = MaterialTheme.typography.labelSmall
+                                )
+                            }
+                        )
+                    }
                 }
             }
             Spacer(modifier = Modifier.height(8.dp))
@@ -343,7 +433,8 @@ fun NoteCard(
 fun NoteListItem(
     note: NoteEntity,
     onClick: () -> Unit,
-    onToggleFavorite: () -> Unit
+    onToggleFavorite: () -> Unit,
+    onTogglePin: (() -> Unit)? = null
 ) {
     Card(
         modifier = Modifier
@@ -363,18 +454,46 @@ fun NoteListItem(
             )
             Spacer(modifier = Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    note.title.ifBlank { "Untitled" },
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Medium,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (note.isPinned) {
+                        Icon(
+                            Icons.Default.PushPin,
+                            contentDescription = "Pinned",
+                            modifier = Modifier.size(14.dp),
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                    }
+                    Text(
+                        note.title.ifBlank { "Untitled" },
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Medium,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+                if (note.tags.isNotBlank()) {
+                    TagChips(
+                        tags = note.tags,
+                        onTagsChanged = {},
+                        editable = false,
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+                }
                 Text(
                     formatDate(note.updatedAt),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
+            }
+            if (onTogglePin != null) {
+                IconButton(onClick = onTogglePin) {
+                    Icon(
+                        if (note.isPinned) Icons.Default.PushPin else Icons.Outlined.PushPin,
+                        contentDescription = if (note.isPinned) "Unpin" else "Pin",
+                        tint = if (note.isPinned) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
             IconButton(onClick = onToggleFavorite) {
                 Icon(

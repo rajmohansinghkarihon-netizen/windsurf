@@ -2,9 +2,11 @@ package com.docufiy.notes.ui.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.docufiy.notes.data.local.entity.NoteBlockEntity
 import com.docufiy.notes.data.local.entity.NoteEntity
 import com.docufiy.notes.data.preferences.AppPreferences
 import com.docufiy.notes.data.repository.NoteRepository
+import com.docufiy.notes.util.NoteTemplates
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -81,6 +83,26 @@ class HomeViewModel @Inject constructor(
     fun toggleFavorite(noteId: Long, isFavorite: Boolean) {
         viewModelScope.launch {
             repository.updateFavorite(noteId, !isFavorite)
+        }
+    }
+
+    fun togglePin(noteId: Long, isPinned: Boolean) {
+        viewModelScope.launch {
+            repository.updatePinned(noteId, !isPinned)
+        }
+    }
+
+    fun createNoteFromTemplate(templateId: String, onCreated: (Long) -> Unit) {
+        viewModelScope.launch {
+            val template = NoteTemplates.getTemplate(templateId) ?: return@launch
+            val noteEntity = NoteEntity(
+                title = template.name,
+                templateType = templateId
+            )
+            val noteId = repository.insertNote(noteEntity)
+            val blocks = NoteTemplates.createBlocksFromTemplate(template, noteId)
+            repository.insertBlocks(blocks)
+            onCreated(noteId)
         }
     }
 }

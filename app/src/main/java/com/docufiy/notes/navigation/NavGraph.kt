@@ -1,6 +1,7 @@
 package com.docufiy.notes.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -10,9 +11,12 @@ import com.docufiy.notes.ui.editor.NoteEditorScreen
 import com.docufiy.notes.ui.export.ExportScreen
 import com.docufiy.notes.ui.history.HistoryScreen
 import com.docufiy.notes.ui.home.HomeScreen
+import com.docufiy.notes.ui.home.HomeViewModel
 import com.docufiy.notes.ui.ocr.OcrScreen
 import com.docufiy.notes.ui.saved.SavedNotesScreen
 import com.docufiy.notes.ui.settings.SettingsScreen
+import com.docufiy.notes.ui.templates.TemplatePickerScreen
+import com.docufiy.notes.ui.webimport.WebImportScreen
 
 sealed class Screen(val route: String) {
     data object Home : Screen("home")
@@ -29,6 +33,8 @@ sealed class Screen(val route: String) {
         fun createRoute(noteId: Long) = "export/$noteId"
     }
     data object Settings : Screen("settings")
+    data object TemplatePicker : Screen("template_picker")
+    data object WebImport : Screen("web_import")
 }
 
 @Composable
@@ -38,9 +44,12 @@ fun DocufiyNavGraph(navController: NavHostController) {
         startDestination = Screen.Home.route
     ) {
         composable(Screen.Home.route) {
+            val homeViewModel: HomeViewModel = hiltViewModel()
             HomeScreen(
                 onNewNote = {
-                    // Created via ViewModel, navigates via callback
+                    homeViewModel.createNewNote { noteId ->
+                        navController.navigate(Screen.Editor.createRoute(noteId))
+                    }
                 },
                 onOpenNote = { noteId ->
                     navController.navigate(Screen.Editor.createRoute(noteId))
@@ -53,7 +62,14 @@ fun DocufiyNavGraph(navController: NavHostController) {
                 },
                 onSettings = {
                     navController.navigate(Screen.Settings.route)
-                }
+                },
+                onTemplates = {
+                    navController.navigate(Screen.TemplatePicker.route)
+                },
+                onWebImport = {
+                    navController.navigate(Screen.WebImport.route)
+                },
+                viewModel = homeViewModel
             )
         }
 
@@ -104,12 +120,10 @@ fun DocufiyNavGraph(navController: NavHostController) {
             OcrScreen(
                 onBack = { navController.popBackStack() },
                 onInsertToNote = { text ->
-                    // Navigate back to editor with the OCR text
                     navController.previousBackStackEntry?.savedStateHandle?.set("ocrText", text)
                     navController.popBackStack()
                 },
                 onSaveAsNewNote = { text ->
-                    // Would create a new note with OCR text and navigate to editor
                     navController.popBackStack()
                 }
             )
@@ -127,6 +141,35 @@ fun DocufiyNavGraph(navController: NavHostController) {
         composable(Screen.Settings.route) {
             SettingsScreen(
                 onBack = { navController.popBackStack() }
+            )
+        }
+
+        composable(Screen.TemplatePicker.route) {
+            val homeViewModel: HomeViewModel = hiltViewModel()
+            TemplatePickerScreen(
+                onBack = { navController.popBackStack() },
+                onTemplateSelected = { templateId ->
+                    homeViewModel.createNoteFromTemplate(templateId) { noteId ->
+                        navController.popBackStack()
+                        navController.navigate(Screen.Editor.createRoute(noteId))
+                    }
+                },
+                onBlankNote = {
+                    homeViewModel.createNewNote { noteId ->
+                        navController.popBackStack()
+                        navController.navigate(Screen.Editor.createRoute(noteId))
+                    }
+                }
+            )
+        }
+
+        composable(Screen.WebImport.route) {
+            WebImportScreen(
+                onBack = { navController.popBackStack() },
+                onNoteCreated = { noteId ->
+                    navController.popBackStack()
+                    navController.navigate(Screen.Editor.createRoute(noteId))
+                }
             )
         }
     }
