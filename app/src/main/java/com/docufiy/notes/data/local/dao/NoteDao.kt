@@ -74,4 +74,13 @@ interface NoteDao {
 
     @Query("SELECT * FROM notes WHERE isDeleted = 0 AND isPinned = 1 ORDER BY updatedAt DESC")
     fun getPinnedNotes(): Flow<List<NoteEntity>>
+
+    @Query("SELECT * FROM notes WHERE isDeleted = 0 AND isWebImport = 1 ORDER BY updatedAt DESC")
+    fun getWebImportedNotes(): Flow<List<NoteEntity>>
+
+    @Query("SELECT * FROM notes WHERE isDeleted = 0 AND isWebImport = 1 ORDER BY updatedAt DESC LIMIT :limit")
+    fun getRecentWebImports(limit: Int = 5): Flow<List<NoteEntity>>
+
+    @Query("UPDATE notes SET sourceUrl = :url WHERE id = :noteId")
+    suspend fun updateSourceUrl(noteId: Long, url: String)
 }

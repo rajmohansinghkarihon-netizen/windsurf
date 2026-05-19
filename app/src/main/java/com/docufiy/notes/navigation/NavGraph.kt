@@ -169,6 +169,9 @@ fun DocufiyNavGraph(navController: NavHostController) {
                 onNoteCreated = { noteId ->
                     navController.popBackStack()
                     navController.navigate(Screen.Editor.createRoute(noteId))
+                },
+                onOpenNote = { noteId ->
+                    navController.navigate(Screen.Editor.createRoute(noteId))
                 }
             )
         }

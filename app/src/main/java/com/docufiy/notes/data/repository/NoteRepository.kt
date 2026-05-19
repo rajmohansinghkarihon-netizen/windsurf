@@ -30,6 +30,9 @@ interface NoteRepository {
     suspend fun updateTags(noteId: Long, tags: String)
     fun getNotesByTag(tag: String): Flow<List<NoteEntity>>
     fun getPinnedNotes(): Flow<List<NoteEntity>>
+    fun getWebImportedNotes(): Flow<List<NoteEntity>>
+    fun getRecentWebImports(limit: Int = 5): Flow<List<NoteEntity>>
+    suspend fun updateSourceUrl(noteId: Long, url: String)
     suspend fun duplicateNote(noteId: Long): Long
 
     // Blocks

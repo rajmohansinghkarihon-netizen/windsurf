@@ -95,6 +95,16 @@ class NoteRepositoryImpl @Inject constructor(
     override fun getPinnedNotes(): Flow<List<NoteEntity>> =
         noteDao.getPinnedNotes()
 
+    override fun getWebImportedNotes(): Flow<List<NoteEntity>> =
+        noteDao.getWebImportedNotes()
+
+    override fun getRecentWebImports(limit: Int): Flow<List<NoteEntity>> =
+        noteDao.getRecentWebImports(limit)
+
+    override suspend fun updateSourceUrl(noteId: Long, url: String) {
+        noteDao.updateSourceUrl(noteId, url)
+    }
+
     override suspend fun duplicateNote(noteId: Long): Long {
         val original = noteDao.getNoteById(noteId) ?: return -1
         val newNote = original.copy(

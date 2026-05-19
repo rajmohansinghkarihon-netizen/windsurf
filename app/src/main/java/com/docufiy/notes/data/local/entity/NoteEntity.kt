@@ -17,5 +17,7 @@ data class NoteEntity(
     val isDeleted: Boolean = false,
     val deletedAt: Long? = null,
     val tags: String = "",
-    val templateType: String? = null
+    val templateType: String? = null,
+    val sourceUrl: String? = null,
+    val isWebImport: Boolean = false
 )

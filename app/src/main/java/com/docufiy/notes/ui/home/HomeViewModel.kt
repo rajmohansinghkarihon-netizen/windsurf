@@ -20,6 +20,7 @@ import javax.inject.Inject
 data class HomeUiState(
     val recentNotes: List<NoteEntity> = emptyList(),
     val favoriteNotes: List<NoteEntity> = emptyList(),
+    val webClips: List<NoteEntity> = emptyList(),
     val searchQuery: String = "",
     val searchResults: List<NoteEntity> = emptyList(),
     val isSearching: Boolean = false
@@ -36,11 +37,13 @@ class HomeViewModel @Inject constructor(
     val uiState: StateFlow<HomeUiState> = combine(
         repository.getRecentNotes(10),
         repository.getFavoriteNotes(),
+        repository.getRecentWebImports(5),
         _searchQuery
-    ) { recent, favorites, query ->
+    ) { recent, favorites, webClips, query ->
         HomeUiState(
             recentNotes = recent,
             favoriteNotes = favorites,
+            webClips = webClips,
             searchQuery = query,
             isSearching = query.isNotBlank()
         )
