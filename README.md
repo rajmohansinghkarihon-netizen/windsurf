@@ -1,90 +1,206 @@
-# Docufiy Notes
+# AI Code Editor
 
-A clean, offline note-taking Android app focused on English and Hinglish-to-Hindi typing, rich text editing, image insertion, OCR text extraction, and export to PDF/PNG.
+A VS Code-like AI-powered code editor built with **Tauri + Rust + React + TypeScript**.
+
+Native desktop app with file explorer, Monaco code editor, built-in terminal, AI assistant, and multi-provider LLM support (Gemini, Groq, OpenAI) — all for **$0**.
 
 ## Features
 
-### Core
-- **Rich Text Editor** — Block-based editor with bold, italic, underline, font size, text/highlight colors, alignment, bullets, and numbered lists
-- **Hinglish → Hindi Transliteration** — Type in Hinglish (e.g., "mera naam vivek hai") and get Hindi text ("मेरा नाम विवेक है") with suggestion chips
-- **OCR Import** — On-device text recognition using Google ML Kit (Latin + Devanagari)
-- **Image Handling** — Insert, resize, compress, and delete images within notes
-- **Export** — Export notes as PDF, PNG, or TXT with configurable page size, resolution, and quality
-- **100% Offline** — No login, no ads, no cloud. All data stays on your device
+- **Monaco Code Editor** — Same editor engine as VS Code, with syntax highlighting for 30+ languages
+- **File Explorer** — Tree view sidebar with folder/file icons
+- **Multi-Tab Support** — Open and edit multiple files in tabs
+- **Built-in Terminal** — Run commands directly from the app
+- **AI Chat Panel** — Natural language instructions to modify your code
+- **Multi-Provider AI** — Google Gemini (free), Groq (free), OpenAI (cheap)
+- **Settings Panel** — Configure API keys, models, and themes
+- **Dark/Light Theme** — Catppuccin-inspired dark theme, clean light theme
+- **Native Desktop App** — Built with Tauri (Rust), ~15MB binary vs Electron's 200MB+
+- **Ctrl+S Save** — Save files with keyboard shortcut
+- **Project-Aware AI** — AI sees your file tree and makes targeted changes
 
-### Screens
-1. **Home** — Quick actions, recent notes, favorites, and search
-2. **Note Editor** — Full rich text editing with floating formatting toolbar
-3. **Saved Notes** — List/grid view with search, sort, rename, duplicate, delete, share, export
-4. **History** — Recently edited, exported, and deleted notes with restore capability
-5. **OCR Import** — Pick image/PDF and extract text with ML Kit
-6. **Export** — PDF/PNG/TXT export with page size, resolution, and quality options
-7. **Settings** — Dark/light mode, accent color customization, auto-save, default font size, typing mode
+## Screenshots
 
-## Tech Stack
+The app features a VS Code-like layout with:
+- Left sidebar: File explorer with tree view
+- Center: Monaco editor with tabs
+- Right panel: AI chat assistant
+- Bottom: Terminal panel (toggleable)
+- Top: Toolbar with panel toggles and settings
 
-| Layer | Technology |
-|-------|-----------|
-| Language | Kotlin |
-| UI | Jetpack Compose + Material 3 |
-| Architecture | MVVM |
-| Database | Room |
-| Preferences | DataStore |
-| Navigation | Navigation Compose |
-| Async | Kotlin Coroutines + Flow |
-| DI | Hilt |
-| OCR | Google ML Kit (on-device) |
-| Images | Coil |
-| Min SDK | 29 (Android 10) |
-| Target SDK | 35 (Android 15+) |
+## Prerequisites
+
+Install these on your system before building:
+
+### 1. Node.js (18+)
+```bash
+# Check if installed
+node --version
+
+# Install via nvm (recommended)
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
+nvm install 20
+```
+
+### 2. Rust
+```bash
+# Check if installed
+rustc --version
+
+# Install via rustup
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+```
+
+### 3. System Dependencies (Linux only)
+```bash
+# Ubuntu/Debian
+sudo apt update
+sudo apt install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf libssl-dev libgtk-3-dev libayatana-appindicator3-dev
+
+# Fedora
+sudo dnf install webkit2gtk4.1-devel openssl-devel gtk3-devel libappindicator-gtk3-devel librsvg2-devel
+```
+
+### 4. Free API Key
+Get a free API key from one of these providers:
+
+| Provider | Cost | Get Key |
+|---|---|---|
+| **Google Gemini** | Free | [aistudio.google.com/apikey](https://aistudio.google.com/apikey) |
+| **Groq** | Free | [console.groq.com/keys](https://console.groq.com/keys) |
+| **OpenAI** | $5 free credit | [platform.openai.com/api-keys](https://platform.openai.com/api-keys) |
+
+## Quick Start
+
+```bash
+# 1. Install dependencies
+npm install
+
+# 2. Run in development mode
+npm run tauri dev
+```
+
+The app will open as a native window. On first launch:
+1. Click **"Open Project Folder"** to select your project
+2. Click the **Settings icon** (gear) in the top-right
+3. Select your AI provider and paste your API key
+4. Click **Save Settings**
+5. Start chatting with the AI panel on the right!
+
+## Build for Production
+
+```bash
+# Build a native binary for your OS
+npm run tauri build
+```
+
+The binary will be in `src-tauri/target/release/`.
+
+### Build outputs by OS:
+- **Linux**: `.deb`, `.AppImage`, `.rpm` in `src-tauri/target/release/bundle/`
+- **Windows**: `.msi`, `.exe` in `src-tauri/target/release/bundle/`
+- **macOS**: `.dmg`, `.app` in `src-tauri/target/release/bundle/`
 
 ## Project Structure
 
 ```
-app/src/main/java/com/docufiy/notes/
-├── data/
-│   ├── local/          # Room database, DAOs, entities
-│   ├── preferences/    # DataStore preferences
-│   └── repository/     # Repository pattern
-├── di/                 # Hilt dependency injection modules
-├── navigation/         # Navigation graph
-├── ui/
-│   ├── theme/          # Material 3 theming
-│   ├── home/           # Home screen
-│   ├── editor/         # Note editor + formatting toolbar
-│   ├── saved/          # Saved notes list/grid
-│   ├── history/        # History screen
-│   ├── ocr/            # OCR import screen
-│   ├── export/         # Export screen
-│   └── settings/       # Settings screen
-└── util/               # Transliterator, image utils, export utils
+ai-code-editor/
+├── src/                          # React frontend
+│   ├── App.tsx                   # Main app layout & state
+│   ├── App.css                   # Full app styling (dark/light themes)
+│   ├── components/
+│   │   ├── FileExplorer.tsx      # Sidebar file tree
+│   │   ├── EditorTabs.tsx        # Tab bar for open files
+│   │   ├── CodeEditor.tsx        # Monaco editor wrapper
+│   │   ├── Terminal.tsx          # Built-in terminal
+│   │   ├── AiChat.tsx            # AI chat panel
+│   │   └── Settings.tsx          # Settings modal
+│   └── utils/
+│       ├── tauri.ts              # Tauri command bindings & types
+│       └── prompts.ts            # AI system prompt & response parser
+├── src-tauri/                    # Rust backend
+│   ├── src/lib.rs                # All Tauri commands (filesystem, terminal, LLM API)
+│   ├── Cargo.toml                # Rust dependencies
+│   └── tauri.conf.json           # Tauri configuration
+├── package.json
+└── README.md
 ```
 
-## Building
+## Architecture
 
-1. Open in Android Studio (Hedgehog or newer)
-2. Sync Gradle
-3. Run on device/emulator (API 29+)
-
-```bash
-./gradlew assembleDebug
+```
+┌──────────────────────────────────────────────────┐
+│                  TAURI WINDOW                     │
+│                                                   │
+│  ┌─────────┐ ┌──────────────────┐ ┌───────────┐  │
+│  │  File    │ │   Monaco Editor  │ │  AI Chat  │  │
+│  │Explorer  │ │   (multi-tab)    │ │  Panel    │  │
+│  │  Tree    │ │                  │ │           │  │
+│  │         │ │                  │ │  Natural  │  │
+│  │         │ │                  │ │  Language  │  │
+│  │         │ │                  │ │  Input    │  │
+│  │         │ ├──────────────────┤ │           │  │
+│  │         │ │    Terminal      │ │  Changes  │  │
+│  │         │ │                  │ │  Preview  │  │
+│  └─────────┘ └──────────────────┘ └───────────┘  │
+│                                                   │
+│  ┌─────────────── Rust Backend ───────────────┐   │
+│  │  File System  │  Terminal  │  LLM API      │   │
+│  │  Operations   │  Commands  │  (Gemini/     │   │
+│  │               │            │   Groq/OpenAI)│   │
+│  └───────────────┴────────────┴───────────────┘   │
+└──────────────────────────────────────────────────┘
 ```
 
-## Database Schema
+## Keyboard Shortcuts
 
-| Table | Purpose |
-|-------|---------|
-| `notes` | Note metadata (title, timestamps, favorite, background color) |
-| `note_blocks` | Block-based content (text, heading, bullet, numbered, image, OCR) |
-| `note_images` | Image metadata linked to notes |
-| `note_history` | Edit/export/delete history |
-| `note_exports` | Export records |
-| `deleted_notes` | Soft-deleted note backups for restore |
+| Shortcut | Action |
+|---|---|
+| `Ctrl+S` | Save current file |
+| `Ctrl+B` | Toggle sidebar (planned) |
+| `Ctrl+J` | Toggle terminal (planned) |
+| `Ctrl+Shift+I` | Toggle AI panel (planned) |
 
-## Privacy
+## AI Usage Examples
 
-- 100% offline — no network calls
-- No login or account required
-- No ads or tracking
-- No cloud upload
-- All notes stored locally on device
+In the AI chat panel, type natural language requests:
+
+```
+"Add a login form with email and password validation"
+"Fix the TypeError in utils.ts"
+"Create a REST API endpoint for /users"
+"Add dark mode support to the CSS"
+"Refactor this component to use React hooks"
+"Add unit tests for the auth module"
+```
+
+The AI will:
+1. Read your project file structure
+2. Generate specific file changes
+3. Show you what will change
+4. Apply changes when you click "Apply"
+
+## Configuration
+
+Settings are saved as `.ai-editor-config.json` in your project folder.
+
+| Setting | Options | Default |
+|---|---|---|
+| Provider | gemini, groq, openai | gemini |
+| Model | Any model from provider | gemini-2.0-flash |
+| Theme | dark, light | dark |
+
+## Tech Stack
+
+| Layer | Technology |
+|---|---|
+| Desktop Shell | Tauri 2.x (Rust) |
+| Frontend | React 19 + TypeScript |
+| Code Editor | Monaco Editor |
+| Build Tool | Vite |
+| Styling | Custom CSS (no framework) |
+| Icons | Lucide React |
+| LLM APIs | Gemini, Groq, OpenAI (via reqwest) |
+
+## License
+
+MIT
