@@ -76,9 +76,15 @@ export const useAgentStore = create<AgentState>((set, get) => ({
     approvalQueue: [...state.approvalQueue, request],
   })),
 
-  resolveApproval: (id, _approved) => set((state) => ({
-    approvalQueue: state.approvalQueue.filter((a) => a.id !== id),
-  })),
+  resolveApproval: (id, approved) => {
+    const request = get().approvalQueue.find((a) => a.id === id);
+    if (!approved && request) {
+      get().addAgentLog(`Approval REJECTED for: ${request.description}`);
+    }
+    set((state) => ({
+      approvalQueue: state.approvalQueue.filter((a) => a.id !== id),
+    }));
+  },
 
   clearApprovals: () => set({ approvalQueue: [] }),
 

@@ -249,7 +249,7 @@ function IDELayout() {
       case 'chat':
         return <AiChat onApplyChanges={handleApplyChanges} />;
       case 'composer':
-        return <NotepadsPanel />;
+        return <ComposerPanel />;
       case 'notepads':
         return <NotepadsPanel />;
       case 'usage':
@@ -350,6 +350,12 @@ function IDELayout() {
                 onClick={() => useUIStore.getState().setRightPanel('chat')}
               >
                 Chat
+              </button>
+              <button
+                className={`right-tab ${rightPanel === 'composer' ? 'active' : ''}`}
+                onClick={() => useUIStore.getState().setRightPanel('composer')}
+              >
+                Composer
               </button>
               <button
                 className={`right-tab ${rightPanel === 'notepads' ? 'active' : ''}`}

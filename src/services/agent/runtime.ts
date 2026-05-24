@@ -1,7 +1,8 @@
 import type { AgentTask, AgentStep, ApprovalRequest, LlmRequest } from '../../types';
 import { useAgentStore } from '../../store/agentStore';
-import { callLlm, readFile, writeFile, createFile, deletePath, runTerminalCommand, searchProject, createCheckpoint } from '../tauri';
+import { callLlm, readFile, writeFile, createFile, deletePath, runTerminalCommand, searchProject, createCheckpoint, gitStatus, gitDiff, gitCommit, gitStage, gitLog } from '../tauri';
 import { AGENT_SYSTEM_PROMPT } from '../../utils/prompts';
+import { detectTerminalError } from '../terminal/errorParser';
 
 type ToolFunction = (input: Record<string, unknown>) => Promise<string>;
 
@@ -107,6 +108,153 @@ export class AgentRuntime {
         const path = input.path as string || '.';
         const result = await runTerminalCommand(`find ${path} -maxdepth 2 -type f | head -50`, this.projectPath);
         return result.stdout;
+      },
+    });
+
+    this.registerTool({
+      name: 'git',
+      description: 'Run git operations (status, diff, commit, stage, log)',
+      requiresApproval: true,
+      execute: async (input) => {
+        const operation = input.operation as string;
+        switch (operation) {
+          case 'status': {
+            const status = await gitStatus(this.projectPath);
+            return JSON.stringify(status, null, 2);
+          }
+          case 'diff': {
+            const staged = input.staged as boolean ?? false;
+            return await gitDiff(this.projectPath, staged);
+          }
+          case 'stage': {
+            const files = input.files as string[];
+            await gitStage(this.projectPath, files);
+            return `Staged: ${files.join(', ')}`;
+          }
+          case 'commit': {
+            const message = input.message as string;
+            const commitFiles = input.files as string[] || [];
+            return await gitCommit(this.projectPath, message, commitFiles);
+          }
+          case 'log': {
+            const count = input.count as number || 10;
+            const commits = await gitLog(this.projectPath, count);
+            return commits.map((c) => `${c.shortHash} ${c.message} (${c.author})`).join('\n');
+          }
+          default:
+            return `Unknown git operation: ${operation}`;
+        }
+      },
+    });
+
+    this.registerTool({
+      name: 'lsp_diagnostics',
+      description: 'Get diagnostics/errors from the project by running the compiler/linter',
+      requiresApproval: false,
+      execute: async (input) => {
+        const lang = input.language as string || 'typescript';
+        let command: string;
+        switch (lang) {
+          case 'typescript':
+            command = 'npx tsc --noEmit 2>&1 | head -50';
+            break;
+          case 'python':
+            command = 'python -m py_compile $(find . -name "*.py" -maxdepth 3) 2>&1 | head -50';
+            break;
+          case 'rust':
+            command = 'cargo check 2>&1 | head -50';
+            break;
+          default:
+            command = `echo "No diagnostic command for ${lang}"`;
+        }
+        const result = await runTerminalCommand(command, this.projectPath);
+        return result.stdout + (result.stderr ? `\nErrors:\n${result.stderr}` : '');
+      },
+    });
+
+    this.registerTool({
+      name: 'test_runner',
+      description: 'Run tests and return results',
+      requiresApproval: true,
+      execute: async (input) => {
+        const framework = input.framework as string || 'auto';
+        let command: string;
+
+        switch (framework) {
+          case 'jest':
+            command = 'npx jest --no-coverage 2>&1';
+            break;
+          case 'vitest':
+            command = 'npx vitest run 2>&1';
+            break;
+          case 'pytest':
+            command = 'python -m pytest -v 2>&1';
+            break;
+          case 'cargo':
+            command = 'cargo test 2>&1';
+            break;
+          case 'go':
+            command = 'go test ./... 2>&1';
+            break;
+          case 'auto':
+          default: {
+            const pkgCheck = await runTerminalCommand('cat package.json 2>/dev/null', this.projectPath);
+            if (pkgCheck.exit_code === 0) {
+              const pkg = pkgCheck.stdout;
+              if (pkg.includes('vitest')) command = 'npx vitest run 2>&1';
+              else if (pkg.includes('jest')) command = 'npx jest --no-coverage 2>&1';
+              else command = 'npm test 2>&1';
+            } else {
+              const cargoCheck = await runTerminalCommand('test -f Cargo.toml && echo yes', this.projectPath);
+              if (cargoCheck.stdout.trim() === 'yes') command = 'cargo test 2>&1';
+              else command = 'echo "No test framework detected"';
+            }
+          }
+        }
+
+        const result = await runTerminalCommand(command, this.projectPath);
+        const output = result.stdout + (result.stderr ? `\n${result.stderr}` : '');
+        const errorInfo = detectTerminalError(output);
+
+        if (errorInfo.hasError) {
+          return `Tests ${result.exit_code === 0 ? 'passed with warnings' : 'FAILED'}\n${output}`;
+        }
+        return `Tests passed\n${output}`;
+      },
+    });
+
+    this.registerTool({
+      name: 'install_package',
+      description: 'Install a package/dependency',
+      requiresApproval: true,
+      execute: async (input) => {
+        const packageName = input.package as string;
+        const manager = input.manager as string || 'npm';
+        const dev = input.dev as boolean ?? false;
+
+        let command: string;
+        switch (manager) {
+          case 'npm':
+            command = `npm install ${dev ? '--save-dev ' : ''}${packageName}`;
+            break;
+          case 'yarn':
+            command = `yarn add ${dev ? '--dev ' : ''}${packageName}`;
+            break;
+          case 'pnpm':
+            command = `pnpm add ${dev ? '--save-dev ' : ''}${packageName}`;
+            break;
+          case 'pip':
+            command = `pip install ${packageName}`;
+            break;
+          case 'cargo':
+            command = `cargo add ${packageName}`;
+            break;
+          default:
+            command = `npm install ${packageName}`;
+        }
+
+        const result = await runTerminalCommand(command, this.projectPath);
+        return `${command}\nExit code: ${result.exit_code}\n${result.stdout}\n${result.stderr}`;
       },
     });
   }
@@ -244,8 +392,42 @@ Available tools: ${Array.from(this.tools.entries()).map(([name, t]) => `${name}:
     }
   }
 
-  private async verifyTask(_task: AgentTask): Promise<boolean> {
-    return true;
+  private async verifyTask(task: AgentTask): Promise<boolean> {
+    const store = useAgentStore.getState();
+    try {
+      const completedSteps = task.steps.filter((s) => s.status === 'completed');
+      const failedSteps = task.steps.filter((s) => s.status === 'failed');
+
+      if (failedSteps.length > 0) {
+        store.addAgentLog(`Verification: ${failedSteps.length} step(s) failed`);
+        return failedSteps.length < task.steps.length / 2;
+      }
+
+      if (completedSteps.length === 0) {
+        store.addAgentLog('Verification: No steps were completed');
+        return false;
+      }
+
+      const request: LlmRequest = {
+        provider: this.provider,
+        api_key: this.apiKey,
+        model: this.model,
+        system_prompt: 'You are a verification assistant. Analyze the task results and determine if the task was completed successfully. Respond with YES or NO followed by a brief reason.',
+        user_prompt: `Task: ${task.title}\nDescription: ${task.description}\n\nCompleted steps: ${completedSteps.length}/${task.steps.length}\nFailed steps: ${failedSteps.length}\n\nStep results:\n${completedSteps.map((s) => `- ${s.description}: ${s.output?.slice(0, 200) || 'done'}`).join('\n')}\n\nWas this task completed successfully?`,
+      };
+
+      const response = await callLlm(request);
+      if (response.success) {
+        const isSuccess = response.text.trim().toUpperCase().startsWith('YES');
+        store.addAgentLog(`Verification result: ${isSuccess ? 'PASSED' : 'FAILED'} - ${response.text.slice(0, 100)}`);
+        return isSuccess;
+      }
+
+      return completedSteps.length > 0 && failedSteps.length === 0;
+    } catch {
+      store.addAgentLog('Verification: Error during verification, assuming success based on step completion');
+      return task.steps.filter((s) => s.status === 'completed').length > 0;
+    }
   }
 
   private async waitForApproval(approvalId: string): Promise<void> {

@@ -134,6 +134,139 @@ Changes:
 {DIFF}
 \`\`\``;
 
+export const SECURITY_REVIEW_PROMPT = `Perform a security review of the following code.
+
+Analyze for:
+1. Injection vulnerabilities (SQL, XSS, command injection)
+2. Authentication and authorization issues
+3. Sensitive data exposure (secrets, tokens, PII)
+4. Input validation gaps
+5. Insecure dependencies
+6. CSRF, SSRF vulnerabilities
+7. Improper error handling that leaks information
+8. Insecure cryptographic practices
+9. Path traversal risks
+10. Race conditions
+
+Severity levels: CRITICAL, HIGH, MEDIUM, LOW, INFO
+Format: [SEVERITY] Description — File:Line — Recommended fix
+
+Code:
+\`\`\`
+{CODE}
+\`\`\`
+
+File: {FILE_PATH}`;
+
+export const PERFORMANCE_REVIEW_PROMPT = `Analyze the following code for performance issues.
+
+Look for:
+1. N+1 query patterns
+2. Unnecessary re-renders (React)
+3. Memory leaks
+4. Inefficient algorithms (O(n²) where O(n) is possible)
+5. Missing memoization opportunities
+6. Large bundle size contributors
+7. Unnecessary async/await
+8. Missing pagination for large data sets
+9. Redundant computations
+10. Blocking operations on the main thread
+
+For each issue found:
+- Describe the problem
+- Estimate impact (High/Medium/Low)
+- Suggest a specific fix with code
+
+Code:
+\`\`\`
+{CODE}
+\`\`\`
+
+File: {FILE_PATH}`;
+
+export const DOCS_GENERATION_PROMPT = `Generate comprehensive documentation for the following code.
+
+Include:
+1. Module/file overview
+2. Function/class documentation with JSDoc/TSDoc format
+3. Parameter descriptions and types
+4. Return value descriptions
+5. Usage examples
+6. Edge cases and error handling notes
+
+Return the documented code in ===FILE: format so it can be applied directly.
+
+Code:
+\`\`\`
+{CODE}
+\`\`\`
+
+File: {FILE_PATH}`;
+
+export const PR_SUMMARY_PROMPT = `Generate a pull request summary for the following changes.
+
+Include:
+1. Title (conventional commit format)
+2. Description (what and why, not how)
+3. Type of change (feature, bugfix, refactor, etc.)
+4. Breaking changes if any
+5. Testing notes
+6. Screenshots/recordings needed (yes/no)
+
+Git diff:
+\`\`\`diff
+{DIFF}
+\`\`\`
+
+Files changed: {FILE_LIST}`;
+
+export const ARCHITECTURE_EXPLANATION_PROMPT = `Explain the architecture of this project.
+
+Analyze:
+1. Project structure and organization
+2. Technology stack
+3. Design patterns used
+4. Data flow
+5. Key abstractions and interfaces
+6. Dependency relationships
+7. Entry points
+8. Configuration approach
+9. Testing strategy
+10. Build and deployment setup
+
+Project structure:
+\`\`\`
+{PROJECT_TREE}
+\`\`\`
+
+Key files:
+{KEY_FILES}`;
+
+export const ONBOARDING_PROMPT = `You are helping a developer get started with an unfamiliar project.
+
+Analyze the project and provide:
+1. **Quick Start**: How to install dependencies and run the project
+2. **Tech Stack**: Languages, frameworks, and key libraries used
+3. **Project Structure**: What each top-level directory/file is for
+4. **Key Concepts**: Domain-specific terms and patterns
+5. **Development Workflow**: How to make changes, run tests, and submit code
+6. **Common Tasks**: How to add a new feature, fix a bug, add a test
+7. **Gotchas**: Non-obvious things that might trip up newcomers
+8. **Resources**: Links to relevant documentation
+
+Project structure:
+\`\`\`
+{PROJECT_TREE}
+\`\`\`
+
+Package config:
+\`\`\`json
+{PACKAGE_JSON}
+\`\`\`
+
+README:
+{README}`;
+
 export const TEST_GENERATION_PROMPT = `Generate comprehensive tests for the following code.
 
 Rules:
@@ -149,6 +282,50 @@ Code to test:
 \`\`\`
 
 File path: {FILE_PATH}`;
+
+export const TEST_RUNNER_PROMPT = `Analyze the test output and provide a summary.
+
+For each test:
+- Status (passed/failed/skipped)
+- If failed: root cause analysis and suggested fix
+
+Test output:
+\`\`\`
+{TEST_OUTPUT}
+\`\`\`
+
+If tests failed, provide fixes in ===FILE: format.`;
+
+export const AUTO_FIX_ERROR_PROMPT = `The following terminal error occurred. Analyze it and suggest a fix.
+
+Error output:
+\`\`\`
+{ERROR_OUTPUT}
+\`\`\`
+
+Current file (if relevant):
+\`\`\`
+{CURRENT_FILE}
+\`\`\`
+
+File path: {FILE_PATH}
+
+Provide the fix in ===FILE: format or ===CMD: format if a command is needed.`;
+
+export const STACK_TRACE_ANALYSIS_PROMPT = `Analyze the following stack trace and identify the root cause.
+
+Stack trace:
+\`\`\`
+{STACK_TRACE}
+\`\`\`
+
+Provide:
+1. Root cause
+2. The specific file and line where the error originates
+3. A suggested fix
+4. Any related files that might need changes
+
+Return fixes in ===FILE: format.`;
 
 export function parseResponse(text: string, existingFiles: Set<string>): ParsedResponse {
   const result: ParsedResponse = {

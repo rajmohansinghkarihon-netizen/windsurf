@@ -12,7 +12,7 @@ interface Props {
   onChange: (value: string) => void;
 }
 
-export default function CodeEditor({ content, language, onChange }: Props) {
+export default function CodeEditor({ content, language, path, onChange }: Props) {
   const config = useSettingsStore((s) => s.config);
   const setCursorPosition = useEditorStore((s) => s.setCursorPosition);
   const setSelectedText = useEditorStore((s) => s.setSelectedText);
@@ -67,6 +67,7 @@ export default function CodeEditor({ content, language, onChange }: Props) {
         height="100%"
         language={language}
         value={content}
+        path={path}
         theme={monacoTheme}
         onChange={(val) => onChange(val || '')}
         onMount={handleEditorMount}

@@ -2514,3 +2514,161 @@ kbd {
   color: var(--text-muted);
   overflow-y: auto;
 }
+
+/* --- Kanban Board --- */
+.kanban-board { display: flex; flex-direction: column; height: 100%; padding: 8px; }
+.kanban-header { display: flex; justify-content: space-between; align-items: center; padding: 4px 8px; }
+.kanban-header h3 { font-size: 13px; font-weight: 600; }
+.kanban-add-btn { display: flex; align-items: center; gap: 4px; padding: 4px 10px; font-size: 12px; background: var(--accent); color: white; border: none; border-radius: 4px; cursor: pointer; }
+.kanban-new-task { padding: 8px; background: var(--bg-secondary); border-radius: 6px; margin: 8px; display: flex; flex-direction: column; gap: 6px; }
+.kanban-new-task input, .kanban-new-task textarea { padding: 6px 8px; border: 1px solid var(--border); border-radius: 4px; background: var(--bg-primary); color: var(--text-primary); font-size: 12px; resize: none; }
+.kanban-new-task-actions { display: flex; gap: 6px; }
+.kanban-new-task-actions button { padding: 4px 12px; font-size: 11px; border: none; border-radius: 4px; cursor: pointer; }
+.kanban-new-task-actions button:first-child { background: var(--accent); color: white; }
+.kanban-new-task-actions button:last-child { background: var(--bg-tertiary); color: var(--text-primary); }
+.kanban-columns { display: flex; gap: 8px; flex: 1; overflow-x: auto; padding: 8px; }
+.kanban-column { min-width: 200px; flex: 1; background: var(--bg-secondary); border-radius: 6px; display: flex; flex-direction: column; }
+.kanban-column-header { padding: 8px 10px; font-size: 12px; font-weight: 600; display: flex; justify-content: space-between; border-top: 3px solid; border-radius: 6px 6px 0 0; }
+.kanban-count { background: var(--bg-tertiary); padding: 0 6px; border-radius: 10px; font-size: 11px; }
+.kanban-cards { flex: 1; padding: 6px; overflow-y: auto; display: flex; flex-direction: column; gap: 4px; }
+.kanban-card { background: var(--bg-primary); padding: 8px 10px; border-radius: 6px; cursor: grab; border: 1px solid var(--border); }
+.kanban-card:hover { border-color: var(--accent); }
+.kanban-card-header { display: flex; align-items: center; gap: 6px; }
+.kanban-card-title { flex: 1; font-size: 12px; font-weight: 500; }
+.kanban-card-delete { background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 2px; opacity: 0; }
+.kanban-card:hover .kanban-card-delete { opacity: 1; }
+.kanban-card-desc { font-size: 11px; color: var(--text-muted); margin-top: 4px; line-height: 1.3; }
+.kanban-card-progress { font-size: 10px; color: var(--text-muted); margin-top: 6px; }
+
+/* --- Web Preview --- */
+.web-preview-panel { display: flex; flex-direction: column; height: 100%; }
+.web-preview-toolbar { display: flex; align-items: center; gap: 4px; padding: 4px 8px; background: var(--bg-secondary); border-bottom: 1px solid var(--border); }
+.preview-nav-btn { background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 4px; border-radius: 4px; display: flex; align-items: center; }
+.preview-nav-btn:hover { background: var(--bg-tertiary); color: var(--text-primary); }
+.preview-nav-btn:disabled { opacity: 0.3; cursor: default; }
+.preview-url-bar { flex: 1; display: flex; align-items: center; gap: 6px; background: var(--bg-primary); border: 1px solid var(--border); border-radius: 4px; padding: 4px 8px; }
+.preview-url-bar input { flex: 1; background: none; border: none; color: var(--text-primary); font-size: 12px; outline: none; }
+.web-preview-content { flex: 1; }
+.web-preview-content iframe { width: 100%; height: 100%; border: none; background: white; }
+.spinning { animation: spin 1s linear infinite; }
+
+/* --- Docker Panel --- */
+.docker-panel { padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+.docker-check, .docker-not-found { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 24px; text-align: center; color: var(--text-muted); }
+.docker-check button, .docker-not-found a { padding: 6px 16px; background: var(--accent); color: white; border: none; border-radius: 4px; cursor: pointer; text-decoration: none; font-size: 12px; }
+.docker-header { display: flex; justify-content: space-between; align-items: center; }
+.docker-header h4 { display: flex; align-items: center; gap: 6px; font-size: 13px; }
+.docker-actions button { background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 4px; }
+.devcontainer-banner { display: flex; align-items: center; gap: 8px; padding: 8px 10px; background: var(--bg-secondary); border-radius: 6px; font-size: 12px; }
+.devcontainer-banner button { padding: 3px 10px; background: var(--accent); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 11px; margin-left: auto; }
+.docker-container-list { display: flex; flex-direction: column; gap: 4px; }
+.docker-empty { text-align: center; color: var(--text-muted); padding: 16px; font-size: 12px; }
+.docker-container-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; background: var(--bg-secondary); border-radius: 6px; }
+.docker-container-info { display: flex; align-items: flex-start; gap: 8px; }
+.docker-status-dot { width: 8px; height: 8px; border-radius: 50%; margin-top: 4px; flex-shrink: 0; }
+.docker-status-dot.running { background: #10b981; }
+.docker-status-dot.stopped { background: #6b7280; }
+.docker-container-name { font-size: 12px; font-weight: 500; }
+.docker-container-image, .docker-container-status, .docker-container-ports { font-size: 11px; color: var(--text-muted); }
+.docker-container-actions { display: flex; gap: 4px; }
+.docker-container-actions button { background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 3px; }
+
+/* --- Remote Server Panel --- */
+.remote-server-panel { padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+.remote-header { display: flex; justify-content: space-between; align-items: center; }
+.remote-header h4 { display: flex; align-items: center; gap: 6px; font-size: 13px; }
+.remote-header button { background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 4px; }
+.remote-add-form { display: flex; flex-direction: column; gap: 6px; padding: 8px; background: var(--bg-secondary); border-radius: 6px; }
+.remote-add-form input, .remote-add-form select { padding: 6px 8px; border: 1px solid var(--border); border-radius: 4px; background: var(--bg-primary); color: var(--text-primary); font-size: 12px; }
+.remote-form-row { display: flex; gap: 6px; }
+.remote-form-actions { display: flex; gap: 6px; }
+.remote-form-actions button { padding: 4px 12px; font-size: 11px; border: none; border-radius: 4px; cursor: pointer; }
+.remote-form-actions button:first-child { background: var(--accent); color: white; }
+.remote-form-actions button:last-child { background: var(--bg-tertiary); color: var(--text-primary); }
+.remote-empty { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 24px; text-align: center; color: var(--text-muted); }
+.remote-server-list { display: flex; flex-direction: column; gap: 4px; }
+.remote-server-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; background: var(--bg-secondary); border-radius: 6px; }
+.remote-server-info { display: flex; align-items: flex-start; gap: 8px; }
+.remote-server-info .connected { color: #10b981; }
+.remote-server-info .disconnected { color: #6b7280; }
+.remote-server-name { font-size: 12px; font-weight: 500; }
+.remote-server-host { font-size: 11px; color: var(--text-muted); font-family: var(--font-mono); }
+.remote-server-status { font-size: 11px; }
+.remote-server-status.connected { color: #10b981; }
+.remote-server-status.disconnected { color: #6b7280; }
+.remote-server-status.connecting { color: #f59e0b; }
+.remote-server-status.error { color: #ef4444; }
+.remote-server-actions { display: flex; gap: 4px; }
+.remote-server-actions button { background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 3px; }
+
+/* --- Repo Map Panel --- */
+.repo-map-panel { display: flex; flex-direction: column; height: 100%; }
+.repo-map-header { display: flex; justify-content: space-between; align-items: center; padding: 4px 8px; border-bottom: 1px solid var(--border); }
+.repo-map-tabs { display: flex; gap: 2px; }
+.repo-map-tabs button { display: flex; align-items: center; gap: 4px; padding: 4px 8px; font-size: 11px; background: none; border: none; color: var(--text-muted); cursor: pointer; border-radius: 4px; }
+.repo-map-tabs button.active { background: var(--accent); color: white; }
+.repo-map-index-btn { background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 4px; }
+.repo-map-search { display: flex; align-items: center; gap: 6px; padding: 4px 8px; border-bottom: 1px solid var(--border); }
+.repo-map-search input { flex: 1; background: none; border: none; color: var(--text-primary); font-size: 12px; outline: none; }
+.repo-map-progress { padding: 8px; }
+.progress-bar { height: 4px; background: var(--bg-tertiary); border-radius: 2px; overflow: hidden; }
+.progress-fill { height: 100%; background: var(--accent); transition: width 0.3s; }
+.repo-map-content { flex: 1; overflow-y: auto; }
+.repo-map-view { padding: 8px; }
+.repo-map-text { font-size: 11px; font-family: var(--font-mono); white-space: pre-wrap; line-height: 1.6; }
+.repo-map-empty { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 24px; text-align: center; color: var(--text-muted); }
+.symbol-list { display: flex; flex-direction: column; gap: 2px; padding: 4px; }
+.symbol-item { display: flex; align-items: center; gap: 8px; padding: 4px 8px; border-radius: 4px; cursor: pointer; }
+.symbol-item:hover { background: var(--bg-secondary); }
+.symbol-kind { font-size: 10px; padding: 1px 6px; border-radius: 3px; background: var(--bg-tertiary); }
+.symbol-kind.function { color: #dcdcaa; }
+.symbol-kind.class { color: #4ec9b0; }
+.symbol-kind.interface { color: #4ec9b0; }
+.symbol-kind.type { color: #4ec9b0; }
+.symbol-kind.variable, .symbol-kind.constant { color: #9cdcfe; }
+.symbol-kind.enum { color: #b5cea8; }
+.symbol-name { font-size: 12px; font-family: var(--font-mono); }
+.symbol-location { font-size: 10px; color: var(--text-muted); margin-left: auto; }
+.dependency-graph { padding: 8px; display: flex; flex-direction: column; gap: 6px; }
+.dep-node { padding: 8px; background: var(--bg-secondary); border-radius: 6px; }
+.dep-node-name { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 500; font-family: var(--font-mono); }
+.dep-imports, .dep-imported-by { margin-top: 4px; display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+.dep-label { font-size: 10px; color: var(--text-muted); }
+.dep-ref { font-size: 10px; padding: 1px 6px; background: var(--bg-tertiary); border-radius: 3px; font-family: var(--font-mono); }
+
+/* --- MCP Panel --- */
+.mcp-panel { display: flex; flex-direction: column; height: 100%; }
+.mcp-header { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; border-bottom: 1px solid var(--border); }
+.mcp-header h4 { display: flex; align-items: center; gap: 6px; font-size: 13px; }
+.mcp-actions { display: flex; gap: 4px; }
+.mcp-actions button { background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 4px; }
+.mcp-add-form { display: flex; flex-direction: column; gap: 6px; padding: 8px 12px; border-bottom: 1px solid var(--border); }
+.mcp-add-form input, .mcp-add-form select { padding: 6px 8px; border: 1px solid var(--border); border-radius: 4px; background: var(--bg-primary); color: var(--text-primary); font-size: 12px; }
+.mcp-form-actions { display: flex; gap: 6px; }
+.mcp-form-actions button { padding: 4px 12px; font-size: 11px; border: none; border-radius: 4px; cursor: pointer; }
+.mcp-form-actions button:first-child { background: var(--accent); color: white; }
+.mcp-form-actions button:last-child { background: var(--bg-tertiary); color: var(--text-primary); }
+.mcp-empty { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 24px; text-align: center; color: var(--text-muted); }
+.mcp-server-list { flex: 1; overflow-y: auto; }
+.mcp-server-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; cursor: pointer; border-bottom: 1px solid var(--border); }
+.mcp-server-item:hover, .mcp-server-item.selected { background: var(--bg-secondary); }
+.mcp-server-info { display: flex; align-items: flex-start; gap: 8px; }
+.mcp-server-info .connected { color: #10b981; }
+.mcp-server-info .disconnected { color: #6b7280; }
+.mcp-server-name { font-size: 12px; font-weight: 500; }
+.mcp-server-transport { font-size: 10px; color: var(--text-muted); text-transform: uppercase; }
+.mcp-server-status { font-size: 11px; }
+.mcp-server-status.connected { color: #10b981; }
+.mcp-server-status.disconnected { color: #6b7280; }
+.mcp-server-status.connecting { color: #f59e0b; }
+.mcp-server-status.error { color: #ef4444; }
+.mcp-error { color: #ef4444; }
+.mcp-server-item-actions { display: flex; gap: 4px; }
+.mcp-server-item-actions button { background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 3px; }
+.mcp-server-details { padding: 8px 12px; border-top: 1px solid var(--border); }
+.mcp-detail-section { margin-bottom: 12px; }
+.mcp-detail-section h5 { display: flex; align-items: center; gap: 6px; font-size: 12px; margin-bottom: 6px; color: var(--text-muted); }
+.mcp-no-items { font-size: 11px; color: var(--text-muted); font-style: italic; }
+.mcp-tool-item, .mcp-resource-item { padding: 4px 8px; background: var(--bg-secondary); border-radius: 4px; margin-bottom: 4px; }
+.mcp-tool-name, .mcp-resource-name { font-size: 12px; font-weight: 500; font-family: var(--font-mono); display: block; }
+.mcp-tool-desc, .mcp-resource-uri { font-size: 10px; color: var(--text-muted); }

@@ -185,7 +185,7 @@ export interface AgentTask {
 
 export interface AgentStep {
   id: string;
-  type: 'plan' | 'read_file' | 'write_file' | 'create_file' | 'delete_file' | 'search' | 'terminal' | 'git' | 'lsp' | 'test' | 'verify';
+  type: 'plan' | 'read_file' | 'write_file' | 'create_file' | 'delete_file' | 'search' | 'terminal' | 'git' | 'lsp' | 'lsp_diagnostics' | 'test' | 'test_runner' | 'verify' | 'run_command' | 'search_project' | 'list_files' | 'install_package';
   description: string;
   status: 'pending' | 'running' | 'completed' | 'failed' | 'skipped';
   input?: Record<string, unknown>;

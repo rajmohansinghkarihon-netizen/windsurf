@@ -1,5 +1,6 @@
 import type { FileEntry, MentionContext, ChatMessage } from '../../types';
 import { readFile } from '../tauri';
+import { searchWeb, formatSearchResults } from './webSearch';
 
 export function buildFileTree(files: FileEntry[], prefix = ''): string {
   let result = '';
@@ -50,7 +51,15 @@ export async function resolveMentionContext(mention: MentionContext, _projectPat
       return `\n### Codebase Context\n[Full codebase indexed and available for reference]\n`;
     }
     case '@web': {
-      return `\n### Web Search: ${mention.value}\n${mention.resolvedContent || '[Web search results]'}\n`;
+      if (mention.resolvedContent) {
+        return `\n### Web Search: ${mention.value}\n${mention.resolvedContent}\n`;
+      }
+      if (mention.value) {
+        const results = await searchWeb(mention.value);
+        const formatted = formatSearchResults(results);
+        return `\n### Web Search: ${mention.value}\n${formatted}\n`;
+      }
+      return `\n### Web Search\n[No query specified]\n`;
     }
     case '@docs': {
       return `\n### Documentation: ${mention.value}\n${mention.resolvedContent || '[Documentation]'}\n`;
