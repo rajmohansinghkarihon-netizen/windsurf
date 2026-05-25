@@ -179,3 +179,143 @@ export const loadConfig = (configPath: string) =>
 
 export const saveConfig = (configPath: string, config: AppConfig) =>
   invoke<void>('save_config', { configPath, config });
+
+// --- Heavy-lifting commands (offloaded to Rust core) ---
+
+// AI Streaming (runs on Rust thread, emits 'llm-stream' events)
+export interface StreamRequest {
+  provider: string;
+  api_key: string;
+  model: string;
+  system_prompt: string;
+  user_prompt: string;
+  temperature?: number;
+  max_tokens?: number;
+  images?: string[];
+  stream_id: string;
+}
+
+export const streamLlm = (request: StreamRequest) =>
+  invoke<void>('stream_llm', { request });
+
+// Project Indexing (runs on Rust thread with walkdir)
+export interface IndexedFile {
+  path: string;
+  relative_path: string;
+  size: number;
+  extension: string;
+  line_count: number;
+}
+
+export interface ProjectIndex {
+  files: IndexedFile[];
+  total_files: number;
+  total_lines: number;
+  total_size: number;
+  languages: Record<string, number>;
+  file_tree: string;
+}
+
+export interface SymbolInfo {
+  name: string;
+  kind: string;
+  path: string;
+  line: number;
+}
+
+export const indexProject = (projectPath: string) =>
+  invoke<ProjectIndex>('index_project', { projectPath });
+
+export const extractSymbols = (projectPath: string) =>
+  invoke<SymbolInfo[]>('extract_symbols', { projectPath });
+
+// File Watching (native OS events via notify crate, emits 'file-changed' events)
+export const startFileWatcher = (projectPath: string) =>
+  invoke<void>('start_file_watcher', { projectPath });
+
+export const stopFileWatcher = () =>
+  invoke<void>('stop_file_watcher');
+
+// Diff Generation (LCS algorithm in Rust)
+export interface DiffHunk {
+  old_start: number;
+  old_count: number;
+  new_start: number;
+  new_count: number;
+  lines: Array<{
+    kind: string;
+    content: string;
+    old_line: number | null;
+    new_line: number | null;
+  }>;
+}
+
+export interface DiffResult {
+  diff_text: string;
+  additions: number;
+  deletions: number;
+  hunks: DiffHunk[];
+}
+
+export const generateDiffRust = (oldContent: string, newContent: string) =>
+  invoke<DiffResult>('generate_diff', { oldContent, newContent });
+
+export const generateMultiFileDiff = (changes: Array<[string, string, string]>) =>
+  invoke<Array<[string, DiffResult]>>('generate_multi_file_diff', { changes });
+
+// Context Building (aggregate file reads in Rust)
+export interface ContextRequest {
+  project_path: string;
+  file_paths?: string[];
+  include_git_diff?: boolean;
+  include_git_log?: boolean;
+  include_tree?: boolean;
+  include_diagnostics?: boolean;
+  terminal_output?: string;
+  selected_text?: string;
+  custom_instructions?: string;
+  project_rules?: string;
+  max_file_size?: number;
+}
+
+export interface BuiltContext {
+  context_text: string;
+  token_estimate: number;
+  file_count: number;
+}
+
+export const buildContextRust = (request: ContextRequest) =>
+  invoke<BuiltContext>('build_context', { request });
+
+export const readMultipleFiles = (projectPath: string, filePaths: string[], maxSize?: number) =>
+  invoke<Array<[string, string]>>('read_multiple_files', { projectPath, filePaths, maxSize });
+
+// Error Parsing (regex-based in Rust)
+export interface ParsedError {
+  has_error: boolean;
+  error_type: string;
+  error_message: string;
+  stack_trace: {
+    message: string;
+    trace_type: string;
+    frames: Array<{
+      file: string;
+      line: number;
+      column: number | null;
+      function_name: string | null;
+      raw: string;
+    }>;
+  } | null;
+  diagnostics: Array<{
+    path: string;
+    line: number;
+    column: number;
+    message: string;
+    severity: string;
+    source: string;
+    code: string | null;
+  }>;
+}
+
+export const parseTerminalErrors = (output: string, projectPath: string) =>
+  invoke<ParsedError>('parse_terminal_errors', { output, projectPath });

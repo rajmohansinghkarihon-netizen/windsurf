@@ -5,6 +5,8 @@ use std::process::Command;
 use std::sync::Mutex;
 use tauri::State;
 
+mod commands;
+
 // --- Data Types ---
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -923,6 +925,17 @@ pub fn run() {
             create_checkpoint,
             restore_checkpoint,
             list_checkpoints,
+            // Heavy-lifting commands (offloaded from frontend)
+            commands::streaming::stream_llm,
+            commands::indexer::index_project,
+            commands::indexer::extract_symbols,
+            commands::watcher::start_file_watcher,
+            commands::watcher::stop_file_watcher,
+            commands::differ::generate_diff,
+            commands::differ::generate_multi_file_diff,
+            commands::context::build_context,
+            commands::context::read_multiple_files,
+            commands::error_parser::parse_terminal_errors,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

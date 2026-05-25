@@ -1,9 +1,7 @@
 import type { LlmRequest } from '../../types';
 import { useAgentStore } from '../../store/agentStore';
 import { useAIStore } from '../../store/aiStore';
-import { runTerminalCommand, callLlm } from '../tauri';
-import { detectTerminalError, parseStackTrace } from '../terminal/errorParser';
-import { resolveMentionContext } from '../ai/context';
+import { runTerminalCommand, callLlm, parseTerminalErrors, buildContextRust } from '../tauri';
 import { AUTO_FIX_ERROR_PROMPT, STACK_TRACE_ANALYSIS_PROMPT, parseResponse } from '../../utils/prompts';
 
 export interface AgentLoopConfig {
@@ -61,18 +59,17 @@ export class AgentLoop {
         break;
       }
 
-      const errorInfo = detectTerminalError(lastOutput);
-      if (!errorInfo.hasError) {
+      // Use Rust-based error parsing (offloaded from main thread)
+      const errorInfo = await parseTerminalErrors(lastOutput, this.config.projectPath);
+      if (!errorInfo.has_error) {
         store.addAgentLog('[Agent Loop] Non-zero exit but no parseable error');
         break;
       }
 
-      store.addAgentLog(`[Agent Loop] Error detected: ${errorInfo.errorType} - ${errorInfo.errorMessage}`);
+      store.addAgentLog(`[Agent Loop] Error detected: ${errorInfo.error_type} - ${errorInfo.error_message}`);
 
-      const stackTrace = parseStackTrace(lastOutput);
       let contextPrompt: string;
-
-      if (stackTrace && stackTrace.frames.length > 0) {
+      if (errorInfo.stack_trace && errorInfo.stack_trace.frames.length > 0) {
         contextPrompt = STACK_TRACE_ANALYSIS_PROMPT
           .replace('{STACK_TRACE}', lastOutput);
       } else {
@@ -82,10 +79,14 @@ export class AgentLoop {
           .replace('{FILE_PATH}', currentFilePath || '[Unknown]');
       }
 
+      // Use Rust-based context building (offloaded from main thread)
       let mentionContext = '';
       if (currentFilePath) {
-        const mention = { type: '@file' as const, value: currentFilePath };
-        mentionContext = await resolveMentionContext(mention, this.config.projectPath);
+        const ctx = await buildContextRust({
+          project_path: this.config.projectPath,
+          file_paths: [currentFilePath],
+        });
+        mentionContext = ctx.context_text;
       }
 
       const fixRequest: LlmRequest = {
@@ -131,14 +132,15 @@ export class AgentLoop {
   }
 
   async watchTerminalAndFix(terminalOutput: string, currentFilePath?: string, currentFileContent?: string): Promise<LoopResult> {
-    const errorInfo = detectTerminalError(terminalOutput);
+    // Use Rust-based error parsing
+    const errorInfo = await parseTerminalErrors(terminalOutput, this.config.projectPath);
 
-    if (!errorInfo.hasError) {
+    if (!errorInfo.has_error) {
       return { success: true, output: terminalOutput, fixesApplied: 0, iterations: 0 };
     }
 
     const store = useAgentStore.getState();
-    store.addAgentLog(`[Agent Loop] Terminal error detected: ${errorInfo.errorType}`);
+    store.addAgentLog(`[Agent Loop] Terminal error detected: ${errorInfo.error_type}`);
 
     const aiStore = useAIStore.getState();
     const fixPrompt = AUTO_FIX_ERROR_PROMPT
