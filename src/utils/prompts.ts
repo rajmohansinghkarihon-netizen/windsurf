@@ -382,24 +382,39 @@ export function parseResponse(text: string, existingFiles: Set<string>): ParsedR
 export function generateDiff(oldContent: string, newContent: string): string {
   const oldLines = oldContent.split('\n');
   const newLines = newContent.split('\n');
-  const result: string[] = [];
 
-  let i = 0;
-  let j = 0;
+  const n = oldLines.length;
+  const m = newLines.length;
+  const dp: number[][] = Array.from({ length: n + 1 }, () => new Array(m + 1).fill(0));
 
-  while (i < oldLines.length || j < newLines.length) {
-    if (i < oldLines.length && j < newLines.length && oldLines[i] === newLines[j]) {
-      result.push(`  ${oldLines[i]}`);
-      i++;
-      j++;
-    } else if (j < newLines.length && (i >= oldLines.length || oldLines[i] !== newLines[j])) {
-      result.push(`+ ${newLines[j]}`);
-      j++;
-    } else if (i < oldLines.length) {
-      result.push(`- ${oldLines[i]}`);
-      i++;
+  for (let i = 1; i <= n; i++) {
+    for (let j = 1; j <= m; j++) {
+      if (oldLines[i - 1] === newLines[j - 1]) {
+        dp[i][j] = dp[i - 1][j - 1] + 1;
+      } else {
+        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
+      }
     }
   }
 
+  const result: string[] = [];
+  let i = n;
+  let j = m;
+
+  while (i > 0 || j > 0) {
+    if (i > 0 && j > 0 && oldLines[i - 1] === newLines[j - 1]) {
+      result.push(`  ${oldLines[i - 1]}`);
+      i--;
+      j--;
+    } else if (j > 0 && (i === 0 || dp[i][j - 1] >= dp[i - 1][j])) {
+      result.push(`+ ${newLines[j - 1]}`);
+      j--;
+    } else {
+      result.push(`- ${oldLines[i - 1]}`);
+      i--;
+    }
+  }
+
+  result.reverse();
   return result.join('\n');
 }

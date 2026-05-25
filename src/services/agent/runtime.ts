@@ -310,7 +310,14 @@ export class AgentRuntime {
           store.addApprovalRequest(approval);
           store.addAgentLog(`Awaiting approval for: ${step.description}`);
 
-          await this.waitForApproval(approval.id);
+          const approved = await this.waitForApproval(approval.id);
+
+          if (!approved) {
+            store.updateStep(task.id, step.id, { status: 'skipped' });
+            store.addAgentLog(`Step skipped (denied): ${step.description}`);
+            store.updateTask(task.id, { status: 'executing' });
+            continue;
+          }
 
           store.updateTask(task.id, { status: 'executing' });
         }
@@ -430,13 +437,14 @@ Available tools: ${Array.from(this.tools.entries()).map(([name, t]) => `${name}:
     }
   }
 
-  private async waitForApproval(approvalId: string): Promise<void> {
-    return new Promise<void>((resolve) => {
+  private async waitForApproval(approvalId: string): Promise<boolean> {
+    return new Promise<boolean>((resolve) => {
       const check = () => {
         const state = useAgentStore.getState();
         const pending = state.approvalQueue.find((a) => a.id === approvalId);
         if (!pending) {
-          resolve();
+          const approved = state.resolvedApprovals.get(approvalId) ?? false;
+          resolve(approved);
         } else {
           setTimeout(check, 500);
         }

@@ -97,6 +97,17 @@ fn get_project_root(state: &State<ProjectRoot>) -> Result<String, String> {
         .ok_or_else(|| "No project directory is open".to_string())
 }
 
+fn validate_cwd_within_project(cwd: &str, project_root: &str) -> Result<String, String> {
+    let canonical_root = fs::canonicalize(project_root)
+        .map_err(|e| format!("Invalid project root: {}", e))?;
+    let canonical_cwd = fs::canonicalize(cwd)
+        .map_err(|e| format!("Invalid cwd: {}", e))?;
+    if !canonical_cwd.starts_with(&canonical_root) {
+        return Err("Access denied: cwd is outside the project directory".to_string());
+    }
+    Ok(canonical_cwd.to_string_lossy().to_string())
+}
+
 // --- Skip lists ---
 
 const SKIP_DIRS: &[&str] = &[
@@ -264,7 +275,10 @@ fn rename_path(old_path: String, new_path: String, state: State<ProjectRoot>) ->
 // --- Terminal Command (P0-5: platform-aware) ---
 
 #[tauri::command]
-fn run_terminal_command(command: String, cwd: String) -> Result<CmdResult, String> {
+fn run_terminal_command(command: String, cwd: String, project_root: State<ProjectRoot>) -> Result<CmdResult, String> {
+    let root = get_project_root(&project_root)?;
+    let safe_cwd = validate_cwd_within_project(&cwd, &root)?;
+
     let (shell, flag) = if cfg!(target_os = "windows") {
         ("cmd", "/c")
     } else {
@@ -274,7 +288,7 @@ fn run_terminal_command(command: String, cwd: String) -> Result<CmdResult, Strin
     let output = Command::new(shell)
         .arg(flag)
         .arg(&command)
-        .current_dir(&cwd)
+        .current_dir(&safe_cwd)
         .output()
         .map_err(|e| format!("Failed to execute: {}", e))?;
 
@@ -491,7 +505,9 @@ fn run_git_cmd(args: &[&str], cwd: &str) -> Result<String, String> {
 }
 
 #[tauri::command]
-fn git_status(cwd: String) -> Result<GitStatus, String> {
+fn git_status(cwd: String, project_root: State<ProjectRoot>) -> Result<GitStatus, String> {
+    let root = get_project_root(&project_root)?;
+    let cwd = validate_cwd_within_project(&cwd, &root)?;
     let branch_output = run_git_cmd(&["branch", "--show-current"], &cwd)?;
     let branch = branch_output.trim().to_string();
 
@@ -541,7 +557,9 @@ fn git_status(cwd: String) -> Result<GitStatus, String> {
 }
 
 #[tauri::command]
-fn git_commit(cwd: String, message: String, files: Vec<String>) -> Result<String, String> {
+fn git_commit(cwd: String, message: String, files: Vec<String>, project_root: State<ProjectRoot>) -> Result<String, String> {
+    let root = get_project_root(&project_root)?;
+    let cwd = validate_cwd_within_project(&cwd, &root)?;
     if !files.is_empty() {
         for file in &files {
             run_git_cmd(&["add", file], &cwd)?;
@@ -551,7 +569,9 @@ fn git_commit(cwd: String, message: String, files: Vec<String>) -> Result<String
 }
 
 #[tauri::command]
-fn git_diff(cwd: String, staged: bool) -> Result<String, String> {
+fn git_diff(cwd: String, staged: bool, project_root: State<ProjectRoot>) -> Result<String, String> {
+    let root = get_project_root(&project_root)?;
+    let cwd = validate_cwd_within_project(&cwd, &root)?;
     if staged {
         run_git_cmd(&["diff", "--cached"], &cwd)
     } else {
@@ -560,7 +580,9 @@ fn git_diff(cwd: String, staged: bool) -> Result<String, String> {
 }
 
 #[tauri::command]
-fn git_log(cwd: String, count: usize) -> Result<Vec<GitCommitInfo>, String> {
+fn git_log(cwd: String, count: usize, project_root: State<ProjectRoot>) -> Result<Vec<GitCommitInfo>, String> {
+    let root = get_project_root(&project_root)?;
+    let cwd = validate_cwd_within_project(&cwd, &root)?;
     let format = "--pretty=format:%H%n%h%n%s%n%an%n%ai%n---";
     let count_str = format!("-{}", count);
     let output = run_git_cmd(&["log", &count_str, format], &cwd)?;
@@ -585,7 +607,9 @@ fn git_log(cwd: String, count: usize) -> Result<Vec<GitCommitInfo>, String> {
 }
 
 #[tauri::command]
-fn git_branches(cwd: String) -> Result<Vec<GitBranchInfo>, String> {
+fn git_branches(cwd: String, project_root: State<ProjectRoot>) -> Result<Vec<GitBranchInfo>, String> {
+    let root = get_project_root(&project_root)?;
+    let cwd = validate_cwd_within_project(&cwd, &root)?;
     let output = run_git_cmd(&["branch", "-a"], &cwd)?;
     let mut branches = Vec::new();
 
@@ -601,19 +625,25 @@ fn git_branches(cwd: String) -> Result<Vec<GitBranchInfo>, String> {
 }
 
 #[tauri::command]
-fn git_checkout(cwd: String, branch: String) -> Result<(), String> {
+fn git_checkout(cwd: String, branch: String, project_root: State<ProjectRoot>) -> Result<(), String> {
+    let root = get_project_root(&project_root)?;
+    let cwd = validate_cwd_within_project(&cwd, &root)?;
     run_git_cmd(&["checkout", &branch], &cwd)?;
     Ok(())
 }
 
 #[tauri::command]
-fn git_create_branch(cwd: String, name: String) -> Result<(), String> {
+fn git_create_branch(cwd: String, name: String, project_root: State<ProjectRoot>) -> Result<(), String> {
+    let root = get_project_root(&project_root)?;
+    let cwd = validate_cwd_within_project(&cwd, &root)?;
     run_git_cmd(&["checkout", "-b", &name], &cwd)?;
     Ok(())
 }
 
 #[tauri::command]
-fn git_stage(cwd: String, files: Vec<String>) -> Result<(), String> {
+fn git_stage(cwd: String, files: Vec<String>, project_root: State<ProjectRoot>) -> Result<(), String> {
+    let root = get_project_root(&project_root)?;
+    let cwd = validate_cwd_within_project(&cwd, &root)?;
     for file in &files {
         run_git_cmd(&["add", file], &cwd)?;
     }
@@ -621,7 +651,9 @@ fn git_stage(cwd: String, files: Vec<String>) -> Result<(), String> {
 }
 
 #[tauri::command]
-fn git_unstage(cwd: String, files: Vec<String>) -> Result<(), String> {
+fn git_unstage(cwd: String, files: Vec<String>, project_root: State<ProjectRoot>) -> Result<(), String> {
+    let root = get_project_root(&project_root)?;
+    let cwd = validate_cwd_within_project(&cwd, &root)?;
     for file in &files {
         run_git_cmd(&["reset", "HEAD", file], &cwd)?;
     }
@@ -629,12 +661,16 @@ fn git_unstage(cwd: String, files: Vec<String>) -> Result<(), String> {
 }
 
 #[tauri::command]
-fn git_push(cwd: String) -> Result<String, String> {
+fn git_push(cwd: String, project_root: State<ProjectRoot>) -> Result<String, String> {
+    let root = get_project_root(&project_root)?;
+    let cwd = validate_cwd_within_project(&cwd, &root)?;
     run_git_cmd(&["push"], &cwd)
 }
 
 #[tauri::command]
-fn git_pull(cwd: String) -> Result<String, String> {
+fn git_pull(cwd: String, project_root: State<ProjectRoot>) -> Result<String, String> {
+    let root = get_project_root(&project_root)?;
+    let cwd = validate_cwd_within_project(&cwd, &root)?;
     run_git_cmd(&["pull"], &cwd)
 }
 
@@ -648,7 +684,10 @@ fn search_project(
     case_sensitive: Option<bool>,
     whole_word: Option<bool>,
     max_results: Option<usize>,
+    project_root: State<ProjectRoot>,
 ) -> Result<Vec<SearchResultItem>, String> {
+    let root = get_project_root(&project_root)?;
+    let cwd = validate_cwd_within_project(&cwd, &root)?;
     let mut args = vec![
         "--line-number".to_string(),
         "--column".to_string(),
@@ -724,7 +763,9 @@ fn search_project(
 // --- Checkpoint Commands ---
 
 #[tauri::command]
-fn create_checkpoint(cwd: String, task_id: String, description: String) -> Result<CheckpointData, String> {
+fn create_checkpoint(cwd: String, task_id: String, description: String, project_root: State<ProjectRoot>) -> Result<CheckpointData, String> {
+    let root = get_project_root(&project_root)?;
+    let cwd = validate_cwd_within_project(&cwd, &root)?;
     let checkpoint_dir = format!("{}/.zenith/checkpoints", cwd);
     fs::create_dir_all(&checkpoint_dir).map_err(|e| e.to_string())?;
 
@@ -770,24 +811,48 @@ fn create_checkpoint(cwd: String, task_id: String, description: String) -> Resul
 }
 
 #[tauri::command]
-fn restore_checkpoint(cwd: String, checkpoint_id: String) -> Result<(), String> {
-    let cp_file = format!("{}/.zenith/checkpoints/{}.json", cwd, checkpoint_id);
+fn restore_checkpoint(cwd: String, checkpoint_id: String, project_root: State<ProjectRoot>) -> Result<(), String> {
+    let root = get_project_root(&project_root)?;
+    let safe_cwd = validate_cwd_within_project(&cwd, &root)?;
+    let cp_file = format!("{}/.zenith/checkpoints/{}.json", safe_cwd, checkpoint_id);
     let content = fs::read_to_string(&cp_file).map_err(|e| format!("Checkpoint not found: {}", e))?;
     let checkpoint: CheckpointData = serde_json::from_str(&content).map_err(|e| e.to_string())?;
 
+    let canonical_cwd = fs::canonicalize(&safe_cwd)
+        .map_err(|e| format!("Invalid cwd: {}", e))?;
+
     for file in &checkpoint.files {
-        let full_path = format!("{}/{}", cwd, file.path);
-        if let Some(parent) = Path::new(&full_path).parent() {
+        let full_path = canonical_cwd.join(&file.path);
+        let canonical_target = if full_path.exists() {
+            fs::canonicalize(&full_path).map_err(|e| format!("Invalid path: {}", e))?
+        } else if let Some(parent) = full_path.parent() {
+            if parent.exists() {
+                let canon_parent = fs::canonicalize(parent).map_err(|e| format!("Invalid path: {}", e))?;
+                canon_parent.join(full_path.file_name().ok_or("Invalid filename")?)
+            } else {
+                return Err(format!("Parent directory does not exist for checkpoint file: {}", file.path));
+            }
+        } else {
+            return Err(format!("Invalid checkpoint file path: {}", file.path));
+        };
+
+        if !canonical_target.starts_with(&canonical_cwd) {
+            return Err(format!("Path traversal blocked: {} escapes project directory", file.path));
+        }
+
+        if let Some(parent) = canonical_target.parent() {
             fs::create_dir_all(parent).map_err(|e| e.to_string())?;
         }
-        fs::write(&full_path, &file.content).map_err(|e| e.to_string())?;
+        fs::write(&canonical_target, &file.content).map_err(|e| e.to_string())?;
     }
 
     Ok(())
 }
 
 #[tauri::command]
-fn list_checkpoints(cwd: String) -> Result<Vec<CheckpointData>, String> {
+fn list_checkpoints(cwd: String, project_root: State<ProjectRoot>) -> Result<Vec<CheckpointData>, String> {
+    let root = get_project_root(&project_root)?;
+    let cwd = validate_cwd_within_project(&cwd, &root)?;
     let checkpoint_dir = format!("{}/.zenith/checkpoints", cwd);
     let mut checkpoints = Vec::new();
 

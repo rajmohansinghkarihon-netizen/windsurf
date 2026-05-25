@@ -5,6 +5,7 @@ interface AgentState {
   tasks: AgentTask[];
   activeTaskId: string;
   approvalQueue: ApprovalRequest[];
+  resolvedApprovals: Map<string, boolean>;
   checkpoints: Checkpoint[];
   isAgentRunning: boolean;
   agentLogs: string[];
@@ -34,6 +35,7 @@ export const useAgentStore = create<AgentState>((set, get) => ({
   tasks: [],
   activeTaskId: '',
   approvalQueue: [],
+  resolvedApprovals: new Map(),
   checkpoints: [],
   isAgentRunning: false,
   agentLogs: [],
@@ -81,8 +83,11 @@ export const useAgentStore = create<AgentState>((set, get) => ({
     if (!approved && request) {
       get().addAgentLog(`Approval REJECTED for: ${request.description}`);
     }
+    const resolved = new Map(get().resolvedApprovals);
+    resolved.set(id, approved);
     set((state) => ({
       approvalQueue: state.approvalQueue.filter((a) => a.id !== id),
+      resolvedApprovals: resolved,
     }));
   },
 

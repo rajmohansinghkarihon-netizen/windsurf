@@ -71,7 +71,13 @@ export default function InlineEdit() {
     if (!result || !activeTabId) return;
     const tab = tabs.find((t) => t.id === activeTabId);
     if (!tab) return;
-    const newContent = tab.content.replace(selectedText, result);
+    const selectionRange = useEditorStore.getState().selectionRange;
+    let newContent: string;
+    if (selectionRange && tab.content.substring(selectionRange.startOffset, selectionRange.endOffset) === selectedText) {
+      newContent = tab.content.substring(0, selectionRange.startOffset) + result + tab.content.substring(selectionRange.endOffset);
+    } else {
+      newContent = tab.content.replace(selectedText, result);
+    }
     updateTabContent(activeTabId, newContent);
     setShowInlineEdit(false);
   };

@@ -135,6 +135,8 @@ async function streamGemini(
   callbacks: StreamCallbacks,
   abortSignal?: AbortSignal
 ): Promise<void> {
+  // Note: Gemini API requires key as URL parameter (API design).
+  // In production, route through backend proxy to avoid exposing key in browser network logs.
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${request.model}:streamGenerateContent?alt=sse&key=${request.api_key}`;
 
   const parts: Array<{text?: string; inlineData?: {mimeType: string; data: string}}> = [

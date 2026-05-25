@@ -16,6 +16,7 @@ export default function CodeEditor({ content, language, path, onChange }: Props)
   const config = useSettingsStore((s) => s.config);
   const setCursorPosition = useEditorStore((s) => s.setCursorPosition);
   const setSelectedText = useEditorStore((s) => s.setSelectedText);
+  const setSelectionRange = useEditorStore((s) => s.setSelectionRange);
   const setShowInlineEdit = useUIStore((s) => s.setShowInlineEdit);
   const editorRef = useRef<monacoEditor.IStandaloneCodeEditor | null>(null);
 
@@ -33,6 +34,9 @@ export default function CodeEditor({ content, language, path, onChange }: Props)
         if (!selection.isEmpty()) {
           const text = model.getValueInRange(selection);
           setSelectedText(text);
+          const startOffset = model.getOffsetAt(selection.getStartPosition());
+          const endOffset = model.getOffsetAt(selection.getEndPosition());
+          setSelectionRange(startOffset, endOffset);
         } else {
           setSelectedText('');
         }
@@ -47,7 +51,7 @@ export default function CodeEditor({ content, language, path, onChange }: Props)
     );
 
     editor.focus();
-  }, [setCursorPosition, setSelectedText, setShowInlineEdit]);
+  }, [setCursorPosition, setSelectedText, setSelectionRange, setShowInlineEdit]);
 
   useEffect(() => {
     const editor = editorRef.current;

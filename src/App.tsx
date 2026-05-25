@@ -185,7 +185,8 @@ function IDELayout() {
     const oldName = path.split('/').pop() || '';
     const newName = window.prompt('New name:', oldName);
     if (!newName || newName === oldName) return;
-    const newPath = path.replace(new RegExp(`${oldName}$`), newName);
+    const escapedOldName = oldName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const newPath = path.replace(new RegExp(`${escapedOldName}$`), newName);
     try {
       await renamePath(path, newPath);
       await refreshFiles(projectPath);

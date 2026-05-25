@@ -20,10 +20,12 @@ export function useAutoSave(): void {
     if (modifiedTabs.length === 0) return;
 
     timerRef.current = setTimeout(async () => {
-      for (const tab of modifiedTabs) {
+      const currentTabs = useEditorStore.getState().tabs;
+      const currentModified = currentTabs.filter((t) => t.modified);
+      for (const tab of currentModified) {
         try {
           await writeFile(tab.path, tab.content);
-          markTabSaved(tab.id);
+          useEditorStore.getState().markTabSaved(tab.id);
         } catch (err) {
           console.error('Auto-save failed:', tab.path, err);
         }

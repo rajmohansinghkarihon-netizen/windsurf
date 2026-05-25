@@ -10,6 +10,7 @@ interface EditorState {
   diagnostics: Diagnostic[];
   cursorPosition: { line: number; column: number };
   selectedText: string;
+  selectionRange: { startOffset: number; endOffset: number } | null;
 
   openTab: (tab: EditorTab) => void;
   closeTab: (id: string) => void;
@@ -34,6 +35,7 @@ interface EditorState {
 
   setCursorPosition: (line: number, column: number) => void;
   setSelectedText: (text: string) => void;
+  setSelectionRange: (startOffset: number, endOffset: number) => void;
 }
 
 export const useEditorStore = create<EditorState>((set, get) => ({
@@ -45,6 +47,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   diagnostics: [],
   cursorPosition: { line: 1, column: 1 },
   selectedText: '',
+  selectionRange: null,
 
   openTab: (tab) => {
     const existing = get().tabs.find((t) => t.path === tab.path);
@@ -145,4 +148,5 @@ export const useEditorStore = create<EditorState>((set, get) => ({
 
   setCursorPosition: (line, column) => set({ cursorPosition: { line, column } }),
   setSelectedText: (text) => set({ selectedText: text }),
+  setSelectionRange: (startOffset, endOffset) => set({ selectionRange: { startOffset, endOffset } }),
 }));
