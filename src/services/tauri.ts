@@ -1,0 +1,321 @@
+import { invoke } from '@tauri-apps/api/core';
+import { load } from '@tauri-apps/plugin-store';
+import type { FileEntry, AppConfig, LlmRequest, LlmResponse, CmdResult, SearchResult, GitStatus, GitCommit, GitBranch, Checkpoint } from '../types';
+
+// --- Project Root ---
+
+export const setProjectRoot = (path: string) =>
+  invoke<void>('set_project_root', { path });
+
+// --- File System ---
+
+export const readDirectory = (path: string) =>
+  invoke<FileEntry[]>('read_directory', { path });
+
+export const readFile = (path: string) =>
+  invoke<string>('read_file', { path });
+
+export const writeFile = (path: string, content: string) =>
+  invoke<void>('write_file', { path, content });
+
+export const createFile = (path: string) =>
+  invoke<void>('create_file', { path });
+
+export const createDirectory = (path: string) =>
+  invoke<void>('create_directory', { path });
+
+export const deletePath = (path: string) =>
+  invoke<void>('delete_path', { path });
+
+export const renamePath = (oldPath: string, newPath: string) =>
+  invoke<void>('rename_path', { oldPath, newPath });
+
+// --- Terminal ---
+
+export const runTerminalCommand = (command: string, cwd: string) =>
+  invoke<CmdResult>('run_terminal_command', { command, cwd });
+
+// --- Git ---
+
+export const gitStatus = (cwd: string) =>
+  invoke<GitStatus>('git_status', { cwd });
+
+export const gitCommit = (cwd: string, message: string, files: string[]) =>
+  invoke<string>('git_commit', { cwd, message, files });
+
+export const gitDiff = (cwd: string, staged: boolean) =>
+  invoke<string>('git_diff', { cwd, staged });
+
+export const gitLog = (cwd: string, count: number) =>
+  invoke<GitCommit[]>('git_log', { cwd, count });
+
+export const gitBranches = (cwd: string) =>
+  invoke<GitBranch[]>('git_branches', { cwd });
+
+export const gitCheckout = (cwd: string, branch: string) =>
+  invoke<void>('git_checkout', { cwd, branch });
+
+export const gitCreateBranch = (cwd: string, name: string) =>
+  invoke<void>('git_create_branch', { cwd, name });
+
+export const gitStage = (cwd: string, files: string[]) =>
+  invoke<void>('git_stage', { cwd, files });
+
+export const gitUnstage = (cwd: string, files: string[]) =>
+  invoke<void>('git_unstage', { cwd, files });
+
+export const gitPush = (cwd: string) =>
+  invoke<string>('git_push', { cwd });
+
+export const gitPull = (cwd: string) =>
+  invoke<string>('git_pull', { cwd });
+
+// --- Search ---
+
+export const searchProject = (cwd: string, query: string, options: {
+  regex?: boolean;
+  caseSensitive?: boolean;
+  wholeWord?: boolean;
+  includePattern?: string;
+  excludePattern?: string;
+  maxResults?: number;
+}) =>
+  invoke<SearchResult[]>('search_project', { cwd, query, ...options });
+
+// --- Checkpoint ---
+
+export const createCheckpoint = (cwd: string, taskId: string, description: string) =>
+  invoke<Checkpoint>('create_checkpoint', { cwd, taskId, description });
+
+export const restoreCheckpoint = (cwd: string, checkpointId: string) =>
+  invoke<void>('restore_checkpoint', { cwd, checkpointId });
+
+export const listCheckpoints = (cwd: string) =>
+  invoke<Checkpoint[]>('list_checkpoints', { cwd });
+
+// --- LLM ---
+
+export const callLlm = (request: LlmRequest) =>
+  invoke<LlmResponse>('call_llm', { request });
+
+// --- Config Store ---
+
+const STORE_NAME = 'zenith-settings.json';
+
+export async function loadConfigFromStore(): Promise<AppConfig> {
+  try {
+    const store = await load(STORE_NAME, { autoSave: true, defaults: {} });
+    const config: Record<string, unknown> = {};
+    const keys = ['provider', 'api_key', 'model', 'theme', 'fontSize', 'fontFamily',
+      'tabSize', 'wordWrap', 'minimap', 'lineNumbers', 'autoSave', 'autoSaveDelay',
+      'ghostText', 'providerKeys', 'recentProjects', 'customKeybindings',
+      'projectRules', 'ollamaUrl', 'openrouterKey'];
+
+    for (const key of keys) {
+      const val = await store.get(key);
+      if (val !== null && val !== undefined) {
+        config[key] = val;
+      }
+    }
+
+    return {
+      provider: (config.provider as AppConfig['provider']) || 'gemini',
+      api_key: (config.api_key as string) || '',
+      model: (config.model as string) || 'gemini-2.0-flash',
+      theme: (config.theme as AppConfig['theme']) || 'dark',
+      fontSize: (config.fontSize as number) || 14,
+      fontFamily: (config.fontFamily as string) || "'Fira Code', 'Cascadia Code', 'JetBrains Mono', 'Consolas', monospace",
+      tabSize: (config.tabSize as number) || 2,
+      wordWrap: (config.wordWrap as boolean) ?? true,
+      minimap: (config.minimap as boolean) ?? true,
+      lineNumbers: (config.lineNumbers as boolean) ?? true,
+      autoSave: (config.autoSave as boolean) ?? false,
+      autoSaveDelay: (config.autoSaveDelay as number) || 1000,
+      ghostText: (config.ghostText as boolean) ?? true,
+      providerKeys: (config.providerKeys as Record<string, string>) || {},
+      recentProjects: (config.recentProjects as string[]) || [],
+      customKeybindings: (config.customKeybindings as Record<string, string>) || {},
+      projectRules: (config.projectRules as string) || '',
+      ollamaUrl: (config.ollamaUrl as string) || 'http://localhost:11434',
+      openrouterKey: (config.openrouterKey as string) || '',
+    };
+  } catch {
+    return {
+      provider: 'gemini',
+      api_key: '',
+      model: 'gemini-2.0-flash',
+      theme: 'dark',
+      fontSize: 14,
+      fontFamily: "'Fira Code', 'Cascadia Code', 'JetBrains Mono', 'Consolas', monospace",
+      tabSize: 2,
+      wordWrap: true,
+      minimap: true,
+      lineNumbers: true,
+      autoSave: false,
+      autoSaveDelay: 1000,
+      ghostText: true,
+      providerKeys: {},
+      recentProjects: [],
+      customKeybindings: {},
+      projectRules: '',
+      ollamaUrl: 'http://localhost:11434',
+      openrouterKey: '',
+    };
+  }
+}
+
+export async function saveConfigToStore(config: AppConfig): Promise<void> {
+  const store = await load(STORE_NAME, { autoSave: true, defaults: {} });
+  for (const [key, value] of Object.entries(config)) {
+    await store.set(key, value);
+  }
+  await store.save();
+}
+
+// --- Legacy Config ---
+
+export const loadConfig = (configPath: string) =>
+  invoke<AppConfig>('load_config', { configPath });
+
+export const saveConfig = (configPath: string, config: AppConfig) =>
+  invoke<void>('save_config', { configPath, config });
+
+// --- Heavy-lifting commands (offloaded to Rust core) ---
+
+// AI Streaming (runs on Rust thread, emits 'llm-stream' events)
+export interface StreamRequest {
+  provider: string;
+  api_key: string;
+  model: string;
+  system_prompt: string;
+  user_prompt: string;
+  temperature?: number;
+  max_tokens?: number;
+  images?: string[];
+  stream_id: string;
+}
+
+export const streamLlm = (request: StreamRequest) =>
+  invoke<void>('stream_llm', { request });
+
+// Project Indexing (runs on Rust thread with walkdir)
+export interface IndexedFile {
+  path: string;
+  relative_path: string;
+  size: number;
+  extension: string;
+  line_count: number;
+}
+
+export interface ProjectIndex {
+  files: IndexedFile[];
+  total_files: number;
+  total_lines: number;
+  total_size: number;
+  languages: Record<string, number>;
+  file_tree: string;
+}
+
+export interface SymbolInfo {
+  name: string;
+  kind: string;
+  path: string;
+  line: number;
+}
+
+export const indexProject = (projectPath: string) =>
+  invoke<ProjectIndex>('index_project', { projectPath });
+
+export const extractSymbols = (projectPath: string) =>
+  invoke<SymbolInfo[]>('extract_symbols', { projectPath });
+
+// File Watching (native OS events via notify crate, emits 'file-changed' events)
+export const startFileWatcher = (projectPath: string) =>
+  invoke<void>('start_file_watcher', { projectPath });
+
+export const stopFileWatcher = () =>
+  invoke<void>('stop_file_watcher');
+
+// Diff Generation (LCS algorithm in Rust)
+export interface DiffHunk {
+  old_start: number;
+  old_count: number;
+  new_start: number;
+  new_count: number;
+  lines: Array<{
+    kind: string;
+    content: string;
+    old_line: number | null;
+    new_line: number | null;
+  }>;
+}
+
+export interface DiffResult {
+  diff_text: string;
+  additions: number;
+  deletions: number;
+  hunks: DiffHunk[];
+}
+
+export const generateDiffRust = (oldContent: string, newContent: string) =>
+  invoke<DiffResult>('generate_diff', { oldContent, newContent });
+
+export const generateMultiFileDiff = (changes: Array<[string, string, string]>) =>
+  invoke<Array<[string, DiffResult]>>('generate_multi_file_diff', { changes });
+
+// Context Building (aggregate file reads in Rust)
+export interface ContextRequest {
+  project_path: string;
+  file_paths?: string[];
+  include_git_diff?: boolean;
+  include_git_log?: boolean;
+  include_tree?: boolean;
+  include_diagnostics?: boolean;
+  terminal_output?: string;
+  selected_text?: string;
+  custom_instructions?: string;
+  project_rules?: string;
+  max_file_size?: number;
+}
+
+export interface BuiltContext {
+  context_text: string;
+  token_estimate: number;
+  file_count: number;
+}
+
+export const buildContextRust = (request: ContextRequest) =>
+  invoke<BuiltContext>('build_context', { request });
+
+export const readMultipleFiles = (projectPath: string, filePaths: string[], maxSize?: number) =>
+  invoke<Array<[string, string]>>('read_multiple_files', { projectPath, filePaths, maxSize });
+
+// Error Parsing (regex-based in Rust)
+export interface ParsedError {
+  has_error: boolean;
+  error_type: string;
+  error_message: string;
+  stack_trace: {
+    message: string;
+    trace_type: string;
+    frames: Array<{
+      file: string;
+      line: number;
+      column: number | null;
+      function_name: string | null;
+      raw: string;
+    }>;
+  } | null;
+  diagnostics: Array<{
+    path: string;
+    line: number;
+    column: number;
+    message: string;
+    severity: string;
+    source: string;
+    code: string | null;
+  }>;
+}
+
+export const parseTerminalErrors = (output: string, projectPath: string) =>
+  invoke<ParsedError>('parse_terminal_errors', { output, projectPath });
